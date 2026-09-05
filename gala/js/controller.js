@@ -17,26 +17,19 @@ const DEFAULTS = {
   eventName: 'An Evening for Aspiring Futures',
   tagline: 'The best way to predict the future is to shape it',
   goal: 100000, showGoal: false, showTotal: true,
-  costPerChild: 300, pace: 1, hold: false, autoExport: true,
+  pace: 1, hold: false, autoExport: true,
   qrCaption: 'Scan to give — every gift is matched to a classroom in Pakistan.',
   categories: [
-    { id: 'c1', name: 'Tuition & school fees', pct: 40 },
-    { id: 'c2', name: 'Teachers & training', pct: 25 },
-    { id: 'c3', name: 'Books & uniforms', pct: 20 },
-    { id: 'c4', name: 'Meals & transport', pct: 15 }
+    { id: 'student', name: 'Student living & education', pct: 30, monthly: 65, unit: 'students' },
+    { id: 'family', name: 'Family financial assistance', pct: 25, monthly: 120, unit: 'families' },
+    { id: 'shelter', name: 'Shelter home living', pct: 25, monthly: 60, unit: 'children' },
+    { id: 'books', name: 'Books, supplies & laptops', pct: 20, monthly: 15, unit: 'students' }
   ],
   fields: [
     { id: 'status', label: 'Status', type: 'choice', options: ['Paid', 'Pledged'], onScreen: true, wide: true, sticky: true },
     { id: 'table', label: 'Table / seat', type: 'text', onScreen: true },
     { id: 'collector', label: 'Collector', type: 'text', onScreen: false, sticky: true },
     { id: 'place', label: 'City or country', type: 'text', onScreen: true, wide: true }
-  ],
-  childYearCost: 780,
-  programs: [
-    { id: 'shelter', name: 'Shelter home living', monthly: 60, unit: 'children' },
-    { id: 'books', name: "Students' books, supplies & laptops", monthly: 15, unit: 'students' },
-    { id: 'family', name: 'Family financial assistance', monthly: 120, unit: 'families' },
-    { id: 'student', name: "A student's living & education", monthly: 65, unit: 'students' }
   ],
   donations: [], stage: null
 };
@@ -54,6 +47,12 @@ function migrate(s) {
     return Object.assign({}, d, { fields: f });
   });
   if (!s.fields) { s.fields = DEFAULTS.fields.map((f) => Object.assign({}, f)); touched = true; }
+  // Categories now carry a monthly sponsorship cost (they drive the impact
+  // figures). State that predates this has none — upgrade it to the defaults.
+  if (!s.categories || !s.categories.some((c) => c && Number(c.monthly) > 0)) {
+    s.categories = DEFAULTS.categories.map((c) => Object.assign({}, c));
+    touched = true;
+  }
   return touched ? Object.assign({}, s, { donations }) : s;
 }
 /* Active fields plus any field that still has recorded values — a field removed
@@ -577,24 +576,24 @@ class Component extends DCLogic {
       totalOnLabel: s.showTotal ? 'Running total is on screen' : 'Reveal the running total',
 
       catRows: cats.map((c, i) => ({
-        name: c.name, pct: c.pct, color: POD[i % POD.length],
+        name: c.name, pct: c.pct, monthly: c.monthly, color: POD[i % POD.length],
         onName: (e) => this.commit({ categories: cats.map((x, j) => j === i ? Object.assign({}, x, { name: e.target.value }) : x) }),
         onPct: (e) => this.commit({ categories: cats.map((x, j) => j === i ? Object.assign({}, x, { pct: Number(e.target.value) || 0 }) : x) }),
+        onMonthly: (e) => this.commit({ categories: cats.map((x, j) => j === i ? Object.assign({}, x, { monthly: Number(e.target.value) || 0 }) : x) }),
         remove: () => this.commit({ categories: cats.filter((x, j) => j !== i) })
       })),
       sumLabel: Math.round(sum) + '% allocated',
       sumColor: Math.abs(sum - 100) < 0.5 ? 'var(--color-accent-2-300)' : 'var(--color-accent-300)',
-      addCat: () => this.commit({ categories: cats.concat([{ id: uid(), name: 'New category', pct: 10 }]) }),
+      addCat: () => this.commit({ categories: cats.concat([{ id: uid(), name: 'New program', pct: 10, monthly: 50, unit: 'children' }]) }),
       normalize: () => {
         const t = sum || 1;
         this.commit({ categories: cats.map((c) => Object.assign({}, c, { pct: Math.round((Number(c.pct) || 0) / t * 1000) / 10 })) });
       },
 
-      eventName: s.eventName, tagline: s.tagline, qrCaption: s.qrCaption, childYearCost: s.childYearCost,
+      eventName: s.eventName, tagline: s.tagline, qrCaption: s.qrCaption,
       onEventName: (e) => this.commit({ eventName: e.target.value }),
       onTagline: (e) => this.commit({ tagline: e.target.value }),
       onQrCaption: (e) => this.commit({ qrCaption: e.target.value }),
-      onChildCost: (e) => this.commit({ childYearCost: Number(e.target.value) || 780 }),
       paces: [['Brisk', 0.7], ['Standard', 1], ['Slow', 1.35]].map(([label, v]) => ({
         label, bg: Math.abs(Number(s.pace) - v) < 0.01 ? on : off,
         set: () => this.commit({ pace: v })

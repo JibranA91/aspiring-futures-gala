@@ -70,22 +70,22 @@ Then open **http://localhost:8712/** for the control console.
 
 ### Settings
 
-- **Where it goes** — the category split the audience screen breaks each gift
-  into (percentages; "Normalize to 100" fixes the math).
+- **Where it goes** — the sponsorship programs each gift is split across. Each
+  has a **share %** (how the money is allocated) and a **monthly cost** (what it
+  costs to sponsor one beneficiary). Both drive the audience impact figures;
+  "Normalize to 100" fixes the percentages. Defaults: Student living & education
+  30% / $65, Family financial assistance 25% / $120, Shelter home living 25% /
+  $60, Books, supplies & laptops 20% / $15.
 - **Gift fields** — add/rename the fields you collect per gift (text / number /
   choice), and choose which appear on the audience screen vs. console-only.
-- **Screen & wording** — event name, tagline, QR caption, the **cost to support
-  one child for a year** (drives the board's overall impact figure), and animation
-  pace.
+- **Screen & wording** — event name, tagline, QR caption, and animation pace.
 - **The goal** — set a target and reveal the goal and/or running total on screen.
-- **Impact figures** — each gift is translated into a **randomly chosen
-  sponsorship program**, shown as the number of people it supports for a year
-  (gift size decides which programs are eligible): Shelter home living $60/mo
-  (children), Books, supplies & laptops $15/mo (students), Family financial
-  assistance $120/mo (families), Student living & education $65/mo (students).
-  The board's single headline figure is **children supported for a year** =
-  running total ÷ the cost-per-child above (kept honest — it never pools the whole
-  total into one program).
+- **Impact figures** — each shown gift is translated into a **randomly chosen
+  program** (from "Where it goes", gated by gift size) as the number of people
+  it supports for a year — e.g. "6 families supported for a year of family
+  financial assistance". The board's headline figure is **children supported for
+  a year**, summed across the programs from each program's own share of the total
+  — so it never misleadingly pools the whole total into a single program.
 
 ### Backup — nothing is lost
 

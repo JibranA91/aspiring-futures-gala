@@ -20,20 +20,13 @@ const DEFAULTS = {
   eventName: 'An Evening for Aspiring Futures',
   tagline: 'The best way to predict the future is to shape it',
   goal: 100000, showGoal: false, showTotal: true,
-  costPerChild: 300, pace: 1, hold: false,
+  pace: 1, hold: false,
   qrCaption: 'Scan to give — every gift is matched to a classroom in Pakistan.',
   categories: [
-    { id: 'c1', name: 'Tuition & school fees', pct: 40 },
-    { id: 'c2', name: 'Teachers & training', pct: 25 },
-    { id: 'c3', name: 'Books & uniforms', pct: 20 },
-    { id: 'c4', name: 'Meals & transport', pct: 15 }
-  ],
-  childYearCost: 780,
-  programs: [
-    { id: 'shelter', name: 'Shelter home living', monthly: 60, unit: 'children' },
-    { id: 'books', name: "Students' books, supplies & laptops", monthly: 15, unit: 'students' },
-    { id: 'family', name: 'Family financial assistance', monthly: 120, unit: 'families' },
-    { id: 'student', name: "A student's living & education", monthly: 65, unit: 'students' }
+    { id: 'student', name: 'Student living & education', pct: 30, monthly: 65, unit: 'students' },
+    { id: 'family', name: 'Family financial assistance', pct: 25, monthly: 120, unit: 'families' },
+    { id: 'shelter', name: 'Shelter home living', pct: 25, monthly: 60, unit: 'children' },
+    { id: 'books', name: 'Books, supplies & laptops', pct: 20, monthly: 15, unit: 'students' }
   ],
   donations: [], stage: null
 };
@@ -57,7 +50,7 @@ function singularUnit(u) {
 
 class Component extends DCLogic {
   state = {
-    s: null, current: null, annLeaving: false, annProgram: null,
+    s: null, current: null, annLeaving: false, annCat: null,
     sparkOn: false, goalTok: 0, banner: null, scale: 1,
     mode: null, code: '', codeDraft: '', pairError: '', link: null, ctrlSeen: 0, now: Date.now()
   };
@@ -223,8 +216,8 @@ class Component extends DCLogic {
     clearTimeout(this._hold);
     clearTimeout(this._out);
     const id = this.queue.shift();
-    if (id == null) { this.setState({ current: null, annLeaving: false, annProgram: null }); return; }
-    this.setState({ current: id, annLeaving: false, annProgram: this.pickProgramFor(id) });
+    if (id == null) { this.setState({ current: null, annLeaving: false, annCat: null }); return; }
+    this.setState({ current: id, annLeaving: false, annCat: this.pickCategoryFor(id) });
     this.scheduleExit();
   }
 
@@ -244,24 +237,24 @@ class Component extends DCLogic {
     clearTimeout(this._hold);
     clearTimeout(this._out);
     this.queue = [];
-    this.setState({ current: null, annLeaving: false, annProgram: null });
+    this.setState({ current: null, annLeaving: false, annCat: null });
   }
 
-  programList() {
+  categoryList() {
     const s = this.state.s || {};
-    return (s.programs && s.programs.length) ? s.programs : DEFAULTS.programs;
+    const cats = (s.categories || []).filter((c) => c && c.name && Number(c.monthly) > 0);
+    return cats.length ? cats : DEFAULTS.categories;
   }
 
-  // Pick a sponsorship program for a gift — random among those it can fund at
-  // least one month of (falls back to any priced program for tiny gifts).
-  pickProgramFor(id) {
+  // Pick a program (a "Where it goes" category) for a gift — random among those
+  // the gift can fund at least a full year of; falls back to any priced one.
+  pickCategoryFor(id) {
     const s = this.state.s || {};
     const d = (s.donations || []).find((x) => x.id === id);
     const amount = d ? Number(d.amount) || 0 : 0;
-    const programs = this.programList();
-    const priced = programs.filter((p) => (Number(p.monthly) || 0) > 0);
-    const elig = priced.filter((p) => amount >= Number(p.monthly) * 12);
-    const pool = elig.length ? elig : priced;
+    const cats = this.categoryList();
+    const elig = cats.filter((c) => amount >= Number(c.monthly) * 12);
+    const pool = elig.length ? elig : cats;
     if (!pool.length) return null;
     return pool[Math.floor(Math.random() * pool.length)].id;
   }
@@ -302,7 +295,6 @@ class Component extends DCLogic {
     const ceiling = showGoal ? goal : niceCeil(total);
     const pct = ceiling > 0 ? Math.min(1, total / ceiling) : 0;
 
-    const programs = (s.programs && s.programs.length) ? s.programs : DEFAULTS.programs;
     const curId = this.state.current;
     const annD = curId ? (s.donations || []).find((d) => d.id === curId) : null;
     const announce = !!annD;
@@ -327,17 +319,20 @@ class Component extends DCLogic {
     const meta = annD
       ? shown(annD, 3, true).map((t) => ({ t })).concat([{ t: pledged ? 'Pledged' : 'Received with thanks' }])
       : [];
-    // This gift's impact, translated into a randomly chosen sponsorship program.
-    // This gift's impact: how many people it sponsors for a full year of a
-    // randomly chosen (size-eligible) program.
-    const annProg = annD && this.state.annProgram ? programs.find((p) => p.id === this.state.annProgram) : null;
-    const annCount = annProg ? Math.max(1, Math.floor(amt / ((Number(annProg.monthly) || 1) * 12))) : 0;
-    const annUnitRaw = annProg ? (annProg.unit || (DEFAULTS.programs.find((p) => p.id === annProg.id) || {}).unit || 'children') : '';
+    // Per-gift impact: how many people this gift could sponsor for a full year of
+    // one randomly chosen "Where it goes" program (see pickCategoryFor).
+    const annProg = annD ? cats.find((c) => c.id === this.state.annCat) || null : null;
+    const annAnnual = annProg ? (Number(annProg.monthly) || 0) * 12 : 0;
+    const annCount = annProg && annAnnual > 0 ? Math.max(1, Math.floor(amt / annAnnual)) : 0;
+    const annUnitRaw = annProg ? (annProg.unit || 'children') : '';
     const annUnit = annProg ? (annCount === 1 ? singularUnit(annUnitRaw) : annUnitRaw) : '';
-    // The board's overall figure: children the running total could fully support
-    // for a year, at one blended per-child cost (never pooled into one program).
-    const childCost = Math.max(1, Number(s.childYearCost) || 780);
-    const ambientChildren = Math.floor(total / childCost);
+    // Board figure: sum of the people the running total supports for a year —
+    // each program funded from its own share of the total (pct ÷ sum), so it's
+    // honest and never pools the whole total into one program.
+    const ambientChildren = cats.reduce((a, c) => {
+      const annual = (Number(c.monthly) || 0) * 12;
+      return annual > 0 ? a + Math.floor((total * (Number(c.pct) || 0) / sum) / annual) : a;
+    }, 0);
 
     const lk = this.state.link || {};
     const paired = this.state.mode === 'paired';
@@ -383,7 +378,7 @@ class Component extends DCLogic {
       })),
       ambientChildren: ambientChildren,
       ambientUnit: ambientChildren === 1 ? 'child' : 'children',
-      costLine: 'Every ' + money(childCost) + ' fully supports one child for a year.',
+      costLine: 'Funded across every program, from tonight’s gifts.',
       wall: live.slice().reverse().slice(0, Math.max(1, Number(this.props.wallLength) || 7)).map((d) => ({
         name: d.anon ? 'A friend of Aspiring Futures' : (d.name || 'A friend of Aspiring Futures'),
         amountLabel: money(d.amount),

@@ -268,17 +268,26 @@ input::placeholder { color: var(--color-neutral-500); }
           <div style="font-size: 14px; font-weight: 700; color: {{ sumColor }}">{{ sumLabel }}</div>
         </div>
         <div style="display: flex; flex-direction: column; gap: 10px">
+          <div style="display: flex; align-items: center; gap: 10px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-neutral-500)">
+            <div style="width: 13px; flex: none"></div>
+            <div style="flex: 1; min-width: 0">Program</div>
+            <div style="width: 64px; flex: none; text-align: center">Share %</div>
+            <div style="width: 92px; flex: none; text-align: center">$ / month</div>
+            <div style="width: 74px; flex: none"></div>
+          </div>
           <sc-for list="{{ catRows }}" as="c" hint-placeholder-count="4">
             <div style="display: flex; align-items: center; gap: 10px">
               <div style="width: 13px; height: 13px; border-radius: 999px; flex: none; background: {{ c.color }}"></div>
               <input class="afin" type="text" value="{{ c.name }}" onChange="{{ c.onName }}" style="flex: 1; min-width: 0; padding: 10px 16px; font-size: 15px">
-              <input class="afin" type="number" min="0" step="1" value="{{ c.pct }}" onChange="{{ c.onPct }}" style="width: 74px; flex: none; padding: 10px 12px; font-size: 15px; text-align: center">
-              <button class="afb" style="padding: 8px 12px; font-size: 13px; color: var(--color-neutral-400); flex: none" onClick="{{ c.remove }}">Remove</button>
+              <input class="afin" type="number" min="0" step="1" value="{{ c.pct }}" onChange="{{ c.onPct }}" style="width: 64px; flex: none; padding: 10px 8px; font-size: 15px; text-align: center">
+              <input class="afin" type="number" min="0" step="5" value="{{ c.monthly }}" onChange="{{ c.onMonthly }}" style="width: 92px; flex: none; padding: 10px 10px; font-size: 15px; text-align: center">
+              <button class="afb" style="padding: 8px 10px; font-size: 13px; color: var(--color-neutral-400); flex: none" onClick="{{ c.remove }}">Remove</button>
             </div>
           </sc-for>
         </div>
-        <div style="display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap">
-          <button class="afb afb-out" onClick="{{ addCat }}">Add category</button>
+        <div style="font-size: 13px; color: var(--color-neutral-500); margin-top: 14px; text-wrap: pretty">Share % splits the money between programs; the monthly cost sets how many people each supports for a year on the audience screen.</div>
+        <div style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap">
+          <button class="afb afb-out" onClick="{{ addCat }}">Add program</button>
           <button class="afb afb-out" onClick="{{ normalize }}">Normalize to 100</button>
         </div>
       </div>
@@ -322,18 +331,12 @@ input::placeholder { color: var(--color-neutral-500); }
             <span class="aflab">Give-from-your-seat caption</span>
             <input class="afin" type="text" value="{{ qrCaption }}" onChange="{{ onQrCaption }}">
           </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px">
-            <div>
-              <span class="aflab">Cost to support one child / year</span>
-              <input class="afin" type="number" min="1" step="10" value="{{ childYearCost }}" onChange="{{ onChildCost }}">
-            </div>
-            <div>
-              <span class="aflab">Animation pace</span>
-              <div style="display: flex; gap: 6px">
-                <sc-for list="{{ paces }}" as="p" hint-placeholder-count="3">
-                  <button class="afb afb-out" style="flex: 1; padding: 12px 8px; font-size: 13px; background: {{ p.bg }}" onClick="{{ p.set }}">{{ p.label }}</button>
-                </sc-for>
-              </div>
+          <div>
+            <span class="aflab">Animation pace</span>
+            <div style="display: flex; gap: 6px">
+              <sc-for list="{{ paces }}" as="p" hint-placeholder-count="3">
+                <button class="afb afb-out" style="flex: 1; padding: 12px 10px; font-size: 13px; background: {{ p.bg }}" onClick="{{ p.set }}">{{ p.label }}</button>
+              </sc-for>
             </div>
           </div>
         </div>
