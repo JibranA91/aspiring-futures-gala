@@ -243,7 +243,7 @@ input::placeholder { color: var(--color-neutral-500); }
         <sc-if value="{{ isPaired }}">
           <div>
             <span class="aflab">Pairing code — type this on the projector laptop</span>
-            <div style="font-family: var(--font-heading); font-size: 27px; letter-spacing: 0.06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--color-accent-400); background: var(--color-neutral-900); border: 1px solid var(--color-divider); border-radius: 20px; padding: 16px 12px; text-align: center">{{ code }}</div>
+            <div style="font-family: var(--font-heading); font-size: 44px; letter-spacing: 0.4em; text-indent: 0.4em; white-space: nowrap; overflow: hidden; color: var(--color-accent-400); background: var(--color-neutral-900); border: 1px solid var(--color-divider); border-radius: 20px; padding: 14px 12px; text-align: center">{{ code }}</div>
             <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap">
               <button class="afb afb-out" style="flex: 1" onClick="{{ copyLink }}">{{ copyLabel }}</button>
               <button class="afb afb-out" onClick="{{ newCode }}">New code</button>

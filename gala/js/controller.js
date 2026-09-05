@@ -117,7 +117,9 @@ class Component extends DCLogic {
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(CODE_KEY) || 'null'); } catch (e) {}
     const mode = saved && saved.mode === 'local' ? 'local' : 'paired';
-    const code = (saved && saved.code) || (window.GalaLink ? window.GalaLink.newCode() : '');
+    const gl = window.GalaLink;
+    let code = saved && saved.code;
+    if (!code || !(gl && gl.parseCode(code))) code = gl ? gl.newCode() : '';
     this.setState({ mode, code });
     this.bootLink(mode, code);
 

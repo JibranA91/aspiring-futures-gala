@@ -2,10 +2,12 @@
    Two modes:
      local  — both windows on one machine (BroadcastChannel)
      paired — two machines over the internet, via a public MQTT-over-WebSocket
-              broker. The pairing code is split: the first half names the room
-              (the topic), the second half derives an AES-GCM key, so the broker
-              only ever carries ciphertext. State is published retained, so a
-              projector laptop that reloads gets the current board immediately.
+              broker. A 4-digit code drives both ends: it derives the room
+              (topic) and an AES-GCM key, so the broker only ever carries
+              ciphertext. Both ends pick the same broker from the code, and a
+              dropped connection reconnects to that SAME broker so the pairing
+              survives blips. State is published retained, so a projector that
+              reloads gets the current board immediately.
    Payload shapes: {kind:'state'|'presence'|'hello', body:...}
 */
 (function () {
@@ -14,23 +16,33 @@
     { url: 'wss://broker.hivemq.com:8884/mqtt', name: 'HiveMQ' },
     { url: 'wss://test.mosquitto.org:8081/mqtt', name: 'Mosquitto' }
   ];
-  const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const enc = new TextEncoder();
   const dec = new TextDecoder();
 
+  const CODE_LEN = 4;
+  function hashStr(s) {
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return (h >>> 0).toString(36);
+  }
   function newCode() {
     let s = '';
-    for (let i = 0; i < 10; i++) s += ALPHA[Math.floor(Math.random() * ALPHA.length)];
-    return s.slice(0, 5) + '-' + s.slice(5);
+    for (let i = 0; i < CODE_LEN; i++) s += Math.floor(Math.random() * 10);
+    return s;
   }
   function parseCode(code) {
-    const c = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (c.length < 10) return null;
-    return { room: c.slice(0, 5), secret: c.slice(5, 10), code: c.slice(0, 5) + '-' + c.slice(5, 10) };
+    const c = String(code || '').replace(/\D/g, '').slice(0, CODE_LEN);
+    if (c.length !== CODE_LEN) return null;
+    // The 4-digit code derives both the room (a stable topic) and the key.
+    return { room: 'r' + hashStr(c), secret: c, code: c };
   }
   function format(code) {
-    const c = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
-    return c.length > 5 ? c.slice(0, 5) + '-' + c.slice(5) : c;
+    return String(code || '').replace(/\D/g, '').slice(0, CODE_LEN);
+  }
+  function brokerIndexFor(room) {
+    let h = 0;
+    for (let i = 0; i < room.length; i++) h = (h * 31 + room.charCodeAt(i)) | 0;
+    return Math.abs(h) % BROKERS.length;
   }
 
   function b64(buf) {
@@ -114,10 +126,11 @@
       status();
 
       let client;
+      let connected = false;
       try {
         client = mqtt.connect(b.url, {
           clientId: 'afg_' + role + '_' + Math.random().toString(16).slice(2, 10),
-          keepalive: 25, reconnectPeriod: 0, connectTimeout: 7000, clean: true
+          keepalive: 20, reconnectPeriod: 0, connectTimeout: 8000, clean: true
         });
       } catch (e) {
         L._bi++; setTimeout(connectBroker, 1200); return;
@@ -129,6 +142,7 @@
 
       client.on('connect', () => {
         if (L._client !== client) { try { client.end(true); } catch (e) {} return; }
+        connected = true;
         L.broker = 'connected';
         L.lastError = '';
         status();
@@ -149,11 +163,14 @@
       const fail = (msg) => {
         if (L._client !== client) return;
         L.broker = 'connecting';
-        L.lastError = msg || '';
+        if (msg) L.lastError = msg;
         status();
         dropClient();
-        L._bi++;
-        setTimeout(connectBroker, 1500);
+        // Reconnect to the SAME broker after a transient drop so we stay paired
+        // with the other laptop; only advance to the next broker if we never
+        // managed to connect (that broker is down).
+        if (!connected) L._bi++;
+        setTimeout(connectBroker, connected ? 1200 : 1500);
       };
       client.on('error', (e) => fail(e && e.message ? e.message : 'relay error'));
       client.on('close', () => fail(''));
@@ -177,13 +194,13 @@
     L.setMode = async function (mode, code) {
       L.mode = mode === 'paired' ? 'paired' : 'local';
       dropClient();
-      L._bi = 0;
       if (L.mode === 'paired') {
         const p = parseCode(code);
         if (!p) { L.mode = 'local'; L.code = ''; L.broker = 'off'; status(); return false; }
         L.code = p.code;
         L._room = p.room;
         L._key = await keyFor(p.secret);
+        L._bi = brokerIndexFor(p.room);
         connectBroker();
       } else {
         L.code = '';

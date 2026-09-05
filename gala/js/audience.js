@@ -66,11 +66,12 @@ class Component extends DCLogic {
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(CODE_KEY) || 'null'); } catch (e) {}
     const urlCode = (function () {
-      const m = (location.hash + '&' + location.search).match(/code=([A-Za-z0-9\-]{10,12})/);
+      const m = (location.hash + '&' + location.search).match(/code=(\d{4})/);
       return m ? m[1] : '';
     })();
     const forceLocal = /local=1/.test(location.hash + location.search);
-    const code = urlCode || (saved && saved.code) || '';
+    let code = urlCode || (saved && saved.code) || '';
+    if (code && !(window.GalaLink && window.GalaLink.parseCode(code))) code = '';
     const mode = (this.props.embedded || forceLocal) ? 'local'
       : (code ? 'paired' : (saved && saved.mode === 'local' ? 'local' : null));
     this.setState({ mode, code, codeDraft: code });
@@ -134,7 +135,7 @@ class Component extends DCLogic {
 
   connectCode = () => {
     const p = window.GalaLink && window.GalaLink.parseCode(this.state.codeDraft);
-    if (!p) { this.setState({ pairError: 'That code is not complete — it looks like ABCDE-12345.' }); return; }
+    if (!p) { this.setState({ pairError: 'The code is four digits, like 1234.' }); return; }
     try { localStorage.setItem(CODE_KEY, JSON.stringify({ mode: 'paired', code: p.code })); } catch (e) {}
     this.setState({ mode: 'paired', code: p.code, codeDraft: p.code, pairError: '' });
     this.bootLink('paired', p.code);
