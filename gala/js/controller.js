@@ -102,7 +102,8 @@ class Component extends DCLogic {
     f: { name: '', amount: '', anon: false, vals: { status: 'Paid' } },
     goalDraft: 10000, err: '', savedAt: null, exportedAt: null, live: false, restoreNote: '',
     mode: 'paired', code: '', link: null, copied: 0, settingsOpen: false,
-    fsSupported: false, backupName: '', backupReady: false, backupPrompt: false, confirmReset: false
+    fsSupported: false, backupName: '', backupReady: false, backupPrompt: false, confirmReset: false,
+    editId: null, editForm: null, editErr: ''
   };
   fileHandle = null;
 
@@ -238,6 +239,50 @@ class Component extends DCLogic {
   // a transient cue, not board state, so it rides the link as its own message
   // rather than through the persisted, retained state.
   fire(type) { if (this.link) this.link.send('celebrate', { type }); }
+
+  // ── Edit a logged gift ───────────────────────────────────────────────────
+  // Open the editor pre-filled from the gift; Save writes the changes back to
+  // that entry (donor, amount, fields, and voided state) and rewrites the CSV.
+  openEdit = (id) => {
+    const d = ((this.state.s || {}).donations || []).find((x) => x.id === id);
+    if (!d) return;
+    this.setState({
+      editId: id, editErr: '',
+      editForm: {
+        name: d.name || '', amount: String(d.amount == null ? '' : d.amount),
+        anon: !!d.anon, vals: Object.assign({}, d.fields || {}), voided: !!d.voided
+      }
+    });
+  };
+  closeEdit = () => this.setState({ editId: null, editForm: null, editErr: '' });
+  setEditF = (k, v) => this.setState({ editForm: Object.assign({}, this.state.editForm, { [k]: v }), editErr: '' });
+  setEditV = (id, v) => {
+    const ef = this.state.editForm;
+    this.setState({ editForm: Object.assign({}, ef, { vals: Object.assign({}, ef.vals, { [id]: v }) }), editErr: '' });
+  };
+  toggleEditVoid = () => this.setState({ editForm: Object.assign({}, this.state.editForm, { voided: !this.state.editForm.voided }) });
+  saveEdit = () => {
+    const ef = this.state.editForm;
+    if (!ef) return;
+    const amount = Number(ef.amount);
+    if (!(amount > 0)) { this.setState({ editErr: 'Enter an amount greater than zero.' }); return; }
+    if (!ef.anon && !ef.name.trim()) { this.setState({ editErr: 'Add a donor name, or mark the gift anonymous.' }); return; }
+    const defs = (this.state.s.fields) || [];
+    const vals = Object.assign({}, ef.vals); // keeps values for any retired fields
+    defs.forEach((fd) => {
+      const raw = vals[fd.id];
+      const v = typeof raw === 'string' ? raw.trim() : raw;
+      if (v === '' || v == null) delete vals[fd.id]; else vals[fd.id] = v;
+    });
+    const id = this.state.editId;
+    this.commit({
+      donations: (this.state.s.donations || []).map((x) => x.id === id
+        ? Object.assign({}, x, { name: ef.anon ? '' : ef.name.trim(), anon: !!ef.anon, amount: amount, fields: vals, voided: !!ef.voided })
+        : x)
+    });
+    this.setState({ editId: null, editForm: null, editErr: '' });
+    this.writeBackup();
+  };
 
   // The CSV is a plain ledger of the gift entries exactly as typed in "New gift"
   // — donor, amount, and the configured gift fields. No category-allocation
@@ -413,6 +458,7 @@ class Component extends DCLogic {
   renderVals() {
     const s = Object.assign({}, DEFAULTS, this.state.s || {});
     const f = this.state.f;
+    const ef = this.state.editForm;
     const all = s.donations || [];
     const live = all.filter((d) => !d.voided);
     const total = live.reduce((a, d) => a + (Number(d.amount) || 0), 0);
@@ -567,12 +613,45 @@ class Component extends DCLogic {
           .concat([d.voided ? 'VOIDED' : null])
           .filter(Boolean).join(' · '),
         show: () => this.showOne(d.id),
-        voidLabel: d.voided ? 'Restore' : 'Void',
-        toggleVoid: () => this.commit({
-          donations: all.map((x) => x.id === d.id ? Object.assign({}, x, { voided: !x.voided }) : x)
-        })
+        edit: () => this.openEdit(d.id)
       })),
       logEmpty: all.length === 0,
+
+      editOpen: !!this.state.editId,
+      editErr: this.state.editErr,
+      closeEdit: this.closeEdit,
+      saveEdit: this.saveEdit,
+      efName: ef ? ef.name : '',
+      efAmount: ef ? ef.amount : '',
+      efAnon: ef ? !!ef.anon : false,
+      onEditName: (e) => this.setEditF('name', e.target.value),
+      onEditAmount: (e) => this.setEditF('amount', e.target.value),
+      setEditNamed: () => this.setEditF('anon', false),
+      setEditAnon: () => this.setEditF('anon', true),
+      editNamedBg: ef && ef.anon ? off : on,
+      editAnonBg: ef && ef.anon ? on : off,
+      editQuick: [100, 250, 500, 1000, 2500, 5000, 10000, 25000].map((v) => ({
+        label: v >= 1000 ? '$' + (v / 1000) + 'k' : '$' + v,
+        set: () => this.setEditF('amount', String(v))
+      })),
+      editFields: ef ? defs.map((fd) => ({
+        label: fd.label,
+        basis: fd.wide || fd.type === 'choice' ? '100%' : 'calc(50% - 7px)',
+        isChoice: fd.type === 'choice',
+        isPlain: fd.type !== 'choice',
+        inputType: fd.type === 'number' ? 'number' : 'text',
+        value: ef.vals[fd.id] == null ? '' : ef.vals[fd.id],
+        onInput: (e) => this.setEditV(fd.id, e.target.value),
+        opts: (fd.options || []).map((o) => ({
+          label: o, bg: String(ef.vals[fd.id] || '') === o ? on : off,
+          pick: () => this.setEditV(fd.id, o)
+        }))
+      })) : [],
+      editVoided: ef ? !!ef.voided : false,
+      toggleEditVoid: this.toggleEditVoid,
+      editVoidLabel: ef && ef.voided ? 'Voided — tap to restore' : 'Void this gift',
+      editVoidBg: ef && ef.voided ? 'var(--color-accent-300)' : 'transparent',
+      editVoidColor: ef && ef.voided ? '#2a1450' : 'var(--color-accent-300)',
 
       goalDraft: this.state.goalDraft,
       onGoalDraft: (e) => this.setState({ goalDraft: e.target.value }),

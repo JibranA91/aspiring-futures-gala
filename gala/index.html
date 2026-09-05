@@ -182,7 +182,7 @@ input::placeholder { color: var(--color-neutral-500); }
               <div style="font-family: var(--font-heading); font-size: 22px; color: var(--color-accent-400); flex: none">{{ d.amountLabel }}</div>
               <div style="display: flex; gap: 6px; flex: none">
                 <button class="afb afb-out" style="padding: 7px 14px; font-size: 13px" onClick="{{ d.show }}">Show</button>
-                <button class="afb" style="padding: 7px 12px; font-size: 13px; color: var(--color-neutral-300)" onClick="{{ d.toggleVoid }}">{{ d.voidLabel }}</button>
+                <button class="afb afb-out" style="padding: 7px 14px; font-size: 13px" onClick="{{ d.edit }}">Edit</button>
               </div>
             </div>
           </sc-for>
@@ -392,6 +392,66 @@ input::placeholder { color: var(--color-neutral-500); }
         <div style="display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end">
           <button class="afb afb-out" onClick="{{ cancelReset }}">Cancel</button>
           <button class="afb afb-primary" onClick="{{ doReset }}" style="background: var(--color-accent-300)">Start a new event</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ editOpen }}">
+    <div style="position: fixed; inset: 0; z-index: 60; background: rgba(9,7,20,.8); display: flex; align-items: flex-start; justify-content: center; padding: 36px 20px; overflow: auto" onClick="{{ closeEdit }}">
+      <div style="width: 100%; max-width: 540px; background: var(--color-bg); border: 1px solid var(--color-divider); border-radius: 28px; padding: 28px; box-shadow: 0 18px 48px rgba(0,0,0,.6)" onClick="{{ stopClick }}">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px">
+          <div style="font-family: var(--font-heading); font-size: 26px; margin-right: auto">Edit gift</div>
+          <button class="afb afb-out" onClick="{{ closeEdit }}">Cancel</button>
+          <button class="afb afb-primary" onClick="{{ saveEdit }}">Save changes</button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 16px">
+          <div>
+            <span class="aflab">Donor name</span>
+            <input class="afin" type="text" placeholder="e.g. The Rahman Family" value="{{ efName }}" onChange="{{ onEditName }}" disabled="{{ efAnon }}">
+            <div style="display: flex; gap: 8px; margin-top: 10px">
+              <button class="afb afb-out" onClick="{{ setEditNamed }}" style="flex: 1; background: {{ editNamedBg }}">Named</button>
+              <button class="afb afb-out" onClick="{{ setEditAnon }}" style="flex: 1; background: {{ editAnonBg }}">Anonymous</button>
+            </div>
+          </div>
+
+          <div>
+            <span class="aflab">Amount (USD)</span>
+            <input class="afin" type="number" inputmode="decimal" min="0" step="1" placeholder="0" value="{{ efAmount }}" onChange="{{ onEditAmount }}" style="font-family: var(--font-heading); font-size: 24px; padding: 12px 20px">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px">
+              <sc-for list="{{ editQuick }}" as="q" hint-placeholder-count="8">
+                <button class="afb afb-out" style="padding: 8px 16px; font-size: 14px" onClick="{{ q.set }}">{{ q.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 14px">
+            <sc-for list="{{ editFields }}" as="fd" hint-placeholder-count="4">
+              <div style="flex: 1 1 {{ fd.basis }}; min-width: 150px">
+                <span class="aflab">{{ fd.label }}</span>
+                <sc-if value="{{ fd.isPlain }}" hint-placeholder-val="{{ true }}">
+                  <input class="afin" type="{{ fd.inputType }}" value="{{ fd.value }}" onChange="{{ fd.onInput }}">
+                </sc-if>
+                <sc-if value="{{ fd.isChoice }}">
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap">
+                    <sc-for list="{{ fd.opts }}" as="o" hint-placeholder-count="2">
+                      <button class="afb afb-out" onClick="{{ o.pick }}" style="flex: 1; min-width: 96px; background: {{ o.bg }}">{{ o.label }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+
+          <sc-if value="{{ editErr }}">
+            <div style="font-size: 15px; color: var(--color-accent-300)">{{ editErr }}</div>
+          </sc-if>
+
+          <div style="height: 1px; background: var(--color-divider); margin: 4px 0"></div>
+          <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap">
+            <button class="afb afb-out" onClick="{{ toggleEditVoid }}" style="background: {{ editVoidBg }}; color: {{ editVoidColor }}; border-color: color-mix(in srgb, var(--color-accent-300) 45%, transparent)">{{ editVoidLabel }}</button>
+            <div style="font-size: 13px; color: var(--color-neutral-500); flex: 1; min-width: 180px; text-wrap: pretty">Voided gifts drop out of the totals and the audience screen, but stay in the CSV.</div>
+          </div>
         </div>
       </div>
     </div>
