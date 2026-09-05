@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+*.swp
+
+# Local tool state
+.claude/settings.local.json
+
+# Logs
+*.log
