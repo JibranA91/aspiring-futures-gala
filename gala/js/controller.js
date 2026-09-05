@@ -578,7 +578,7 @@ class Component extends DCLogic {
       onGoalDraft: (e) => this.setState({ goalDraft: e.target.value }),
       applyGoal: () => {
         const g = Number(this.state.goalDraft);
-        if (g > 0) this.commit({ goal: g });
+        if (g > 0) this.commit({ goal: g, showGoal: true });
       },
       toggleGoal: () => this.commit({ showGoal: !s.showGoal }),
       goalOnBg: s.showGoal ? on : off,
