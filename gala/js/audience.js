@@ -119,6 +119,7 @@ class Component extends DCLogic {
           onMessage: (kind, body) => {
             if (kind === 'state') this.apply(body);
             if (kind === 'presence' && body && body.role === 'controller') this.setState({ ctrlSeen: Date.now() });
+            if (kind === 'celebrate' && body && body.type) this.celebrate(body.type);
           },
           onStatus: (st) => this.setState({ link: st })
         });
@@ -131,6 +132,11 @@ class Component extends DCLogic {
       }
     };
     start();
+  }
+
+  // Play a celebratory burst on the screen, triggered from Gala Control.
+  celebrate(type) {
+    if (window.Celebrations) window.Celebrations.play(type);
   }
 
   connectCode = () => {
