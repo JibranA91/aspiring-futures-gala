@@ -37,6 +37,11 @@ Then open **http://localhost:8080/**.
 - **Audience Screen** — `http://localhost:8080/audience.html` — the projector
   view. For a single laptop, open **Settings → This laptop → Open audience
   window**; for two laptops, pair them with the on-screen code.
+- **Two laptops on the same network:** the launcher prints an **Other laptop**
+  URL (e.g. `http://10.0.0.156:8080/audience.html`). Open that on the projector
+  laptop, then pair with the code from the host's Settings. (If Windows prompts,
+  allow Python through the firewall so the other laptop can reach it. For laptops
+  on *different* networks, just use the code pairing — no IP needed.)
 
 The full event guide (one- vs two-laptop setup, settings, backup, reset) and the
 architecture notes are in **[`gala/README.md`](gala/README.md)**.
