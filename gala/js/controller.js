@@ -234,6 +234,11 @@ class Component extends DCLogic {
 
   showOne(id) { this.commit({ stage: { token: Date.now(), id } }); }
 
+  // Fire a celebratory burst on the audience screen (and the live preview). It's
+  // a transient cue, not board state, so it rides the link as its own message
+  // rather than through the persisted, retained state.
+  fire(type) { if (this.link) this.link.send('celebrate', { type }); }
+
   // The CSV is a plain ledger of the gift entries exactly as typed in "New gift"
   // — donor, amount, and the configured gift fields. No category-allocation
   // columns and no TOTAL summary row.
@@ -469,6 +474,11 @@ class Component extends DCLogic {
       openDisplay: this.openDisplay,
       clearScreen: () => this.commit({ stage: null }),
       exportCsv: () => this.exportCsv(false),
+
+      fireConfetti: () => this.fire('confetti'),
+      fireBalloons: () => this.fire('balloons'),
+      fireFireworks: () => this.fire('fireworks'),
+      fireBig: () => this.fire('all'),
 
       fName: f.name, fAmount: f.amount, fAnon: f.anon,
       onName: (e) => this.setF('name', e.target.value),
