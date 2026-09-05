@@ -265,5 +265,7 @@
     return L;
   }
 
-  window.GalaLink = { create, newCode, parseCode, format };
+  const GalaLink = { create, newCode, parseCode, format, _seal: seal, _unseal: unseal, _keyFor: keyFor };
+  if (typeof window !== 'undefined') window.GalaLink = GalaLink;
+  if (typeof module !== 'undefined' && module.exports) module.exports = GalaLink; // for node --test
 })();

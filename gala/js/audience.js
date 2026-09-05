@@ -9,7 +9,7 @@
  * (#local=1 and #code=XXXXX-XXXXX are read inside the component, unchanged.)
  * The template lives in <template id="tpl"> in audience.html.
  */
-const DCLogic = window.DCX.DCLogic;
+const DCLogic = (typeof window !== 'undefined' && window.DCX) ? window.DCX.DCLogic : class {};
 
 const KEY = 'af-gala-state-v1';
 const CODE_KEY = 'af-gala-link-v1';
@@ -442,9 +442,16 @@ function galaProps() {
   };
 }
 
-DCX.boot({
-  container: document.getElementById('dc-root'),
-  template: document.getElementById('tpl').content,
-  Logic: Component,
-  props: galaProps()
-});
+if (typeof window !== 'undefined' && window.DCX) {
+  DCX.boot({
+    container: document.getElementById('dc-root'),
+    template: document.getElementById('tpl').content,
+    Logic: Component,
+    props: galaProps()
+  });
+}
+
+// Exposed for node --test (no effect in the browser). See test/.
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { money, liveTotal, niceCeil, singularUnit, DEFAULTS, Component };
+}

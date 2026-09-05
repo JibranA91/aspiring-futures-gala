@@ -52,4 +52,19 @@ architecture notes are in **[`gala/README.md`](gala/README.md)**.
 gala/          the app — see gala/README.md
 launch.bat     Windows one-click launcher (port 8080)
 launch.sh      macOS / Linux / Git Bash launcher (port 8080)
+test/          core-logic unit tests (run with node --test)
+package.json   test script only — the app itself has no dependencies
 ```
+
+## Tests
+
+The core logic — CSV export/parse, the saved-state `migrate()` upgrade path, totals
+and impact math, and the pairing-code cipher — has a unit-test suite that runs on
+Node's built-in test runner, with **no dependencies and no install step**:
+
+```bash
+node --test
+```
+
+(`npm test` runs the same thing.) The tests in `test/` import the app's own JS
+directly, so the app stays a build-free static site.
