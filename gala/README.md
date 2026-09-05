@@ -83,9 +83,10 @@ Then open **http://localhost:8712/** for the control console.
 - **Impact figures** — each shown gift is translated into a **randomly chosen
   program** (from "Where it goes", gated by gift size) as the number of people
   it supports for a year — e.g. "6 families supported for a year of family
-  financial assistance". The board's headline figure is **children supported for
-  a year**, summed across the programs from each program's own share of the total
-  — so it never misleadingly pools the whole total into a single program.
+  financial assistance". The board's impact figure **cycles through the
+  programs**, each showing how many people its own share of the total supports
+  for a full year (e.g. "5 students · Student living & education · funded from
+  30% of tonight's gifts") — honest, never pooling the whole total into one line.
 
 ### Backup — nothing is lost
 

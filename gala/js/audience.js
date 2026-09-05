@@ -50,7 +50,7 @@ function singularUnit(u) {
 
 class Component extends DCLogic {
   state = {
-    s: null, current: null, annLeaving: false, annCat: null,
+    s: null, current: null, annLeaving: false, annCat: null, ambientIdx: 0,
     sparkOn: false, goalTok: 0, banner: null, scale: 1,
     mode: null, code: '', codeDraft: '', pairError: '', link: null, ctrlSeen: 0, now: Date.now()
   };
@@ -90,6 +90,8 @@ class Component extends DCLogic {
       this.ro.observe(this.root);
     }
     window.addEventListener('resize', this.measure);
+    // Cycle the board's impact figure through the programs.
+    this.ambientCycle = setInterval(() => this.setState({ ambientIdx: (this.state.ambientIdx || 0) + 1 }), 4500);
     this.syncCounters();
   }
 
@@ -99,6 +101,7 @@ class Component extends DCLogic {
     clearTimeout(this._out);
     clearInterval(this.alive);
     clearInterval(this.clock);
+    clearInterval(this.ambientCycle);
     if (this.ro) this.ro.disconnect();
     if (this.link) this.link.destroy();
     window.removeEventListener('storage', this.onStore);
@@ -326,13 +329,14 @@ class Component extends DCLogic {
     const annCount = annProg && annAnnual > 0 ? Math.max(1, Math.floor(amt / annAnnual)) : 0;
     const annUnitRaw = annProg ? (annProg.unit || 'children') : '';
     const annUnit = annProg ? (annCount === 1 ? singularUnit(annUnitRaw) : annUnitRaw) : '';
-    // Board figure: sum of the people the running total supports for a year —
-    // each program funded from its own share of the total (pct ÷ sum), so it's
-    // honest and never pools the whole total into one program.
-    const ambientChildren = cats.reduce((a, c) => {
-      const annual = (Number(c.monthly) || 0) * 12;
-      return annual > 0 ? a + Math.floor((total * (Number(c.pct) || 0) / sum) / annual) : a;
-    }, 0);
+    // Board figure cycles through the programs (see the ambient cycle timer),
+    // each showing how many people its own share of the total supports for a
+    // full year — honest, and never pooled into a single program.
+    const impactCats = cats.filter((c) => Number(c.monthly) > 0);
+    const ambCat = impactCats.length ? impactCats[(this.state.ambientIdx || 0) % impactCats.length] : null;
+    const ambAnnual = ambCat ? (Number(ambCat.monthly) || 0) * 12 : 0;
+    const ambCount = ambCat && ambAnnual > 0 ? Math.floor((total * (Number(ambCat.pct) || 0) / sum) / ambAnnual) : 0;
+    const ambUnitRaw = ambCat ? (ambCat.unit || 'children') : 'children';
 
     const lk = this.state.link || {};
     const paired = this.state.mode === 'paired';
@@ -376,9 +380,11 @@ class Component extends DCLogic {
         amount: total * (Number(c.pct) || 0) / sum,
         color: POD[i % POD.length]
       })),
-      ambientChildren: ambientChildren,
-      ambientUnit: ambientChildren === 1 ? 'child' : 'children',
-      costLine: 'Funded across every program, from tonight’s gifts.',
+      ambientChildren: ambCount,
+      ambientUnit: ambCount === 1 ? singularUnit(ambUnitRaw) : ambUnitRaw,
+      ambientProgramName: ambCat ? ambCat.name : 'Tonight’s gifts',
+      ambientKey: ambCat ? ambCat.id : 'none',
+      costLine: ambCat ? ('Funded from ' + Math.round((Number(ambCat.pct) || 0) / sum * 100) + '% of tonight’s gifts.') : 'Funded across every program.',
       wall: live.slice().reverse().slice(0, Math.max(1, Number(this.props.wallLength) || 7)).map((d) => ({
         name: d.anon ? 'A friend of Aspiring Futures' : (d.name || 'A friend of Aspiring Futures'),
         amountLabel: money(d.amount),
