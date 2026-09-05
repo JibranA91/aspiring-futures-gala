@@ -6,7 +6,7 @@
  * this app's real audience page ("audience.html") instead of the .dc.html
  * design file. The template lives in <template id="tpl"> in index.html.
  */
-const DCLogic = window.DCX.DCLogic;
+const DCLogic = (typeof window !== 'undefined' && window.DCX) ? window.DCX.DCLogic : class {};
 
 const KEY = 'af-gala-state-v1';
 const CODE_KEY = 'af-gala-link-ctrl-v1';
@@ -720,9 +720,16 @@ class Component extends DCLogic {
   }
 }
 
-DCX.boot({
-  container: document.getElementById('dc-root'),
-  template: document.getElementById('tpl').content,
-  Logic: Component,
-  props: { showPreview: true, logRows: 9 }
-});
+if (typeof window !== 'undefined' && window.DCX) {
+  DCX.boot({
+    container: document.getElementById('dc-root'),
+    template: document.getElementById('tpl').content,
+    Logic: Component,
+    props: { showPreview: true, logRows: 9 }
+  });
+}
+
+// Exposed for node --test (no effect in the browser). See test/.
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { money, uid, csvCell, parseCsv, migrate, allFieldDefs, isPledged, DEFAULTS, Component };
+}
