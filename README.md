@@ -19,14 +19,14 @@ It serves the app on **http://localhost:8080/** and opens the control console in
 your browser. Keep that window open during the event; close it (or press
 Ctrl+C) to stop the server.
 
-**Or run it manually** (needs Python installed):
+**Or run it manually** (needs Python installed), from this folder:
 
 ```bash
-cd gala
-python -m http.server 8080
+python serve.py 8080
 ```
 
-Then open **http://localhost:8080/**.
+Then open **http://localhost:8080/**. (`serve.py` serves `gala/` with no-cache
+headers so browsers never hold on to a stale copy after an update.)
 
 > Serve it over HTTP as above — don't open the files directly with `file://`.
 > The live controller ↔ audience sync needs a real origin.

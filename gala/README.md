@@ -17,12 +17,11 @@ run **`./launch.sh`** (macOS / Linux / Git Bash). It starts a local server on
 port **8080** and opens the control console in your browser. Keep that window
 open during the event; close it to stop.
 
-**Manually:** serve the `gala/` folder over HTTP — not `file://`, since the live
-cross-window sync needs a real origin:
+**Manually:** from the project root, run the bundled no-cache server (don't open
+the files as `file://` — the live cross-window sync needs a real origin):
 
 ```bash
-# from inside the gala/ folder
-python -m http.server 8080
+python serve.py 8080
 ```
 
 Then open **http://localhost:8080/** for the control console.

@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 # Aspiring Futures — Gala Fundraising Display launcher.
-# Serves the app on http://localhost:8080/ and opens your browser.
+# Serves the app (no-cache) on http://localhost:8080/ and opens your browser.
 
-cd "$(dirname "$0")/gala" || { echo "Could not find the gala/ folder."; exit 1; }
-
+HERE="$(cd "$(dirname "$0")" && pwd)"
 URL="http://localhost:8080/"
 PORT=8080
 
@@ -38,4 +37,4 @@ echo "  Keep this window open; press Ctrl+C to stop."
   elif command -v start    >/dev/null 2>&1; then start "" "$URL"
   else true; fi ) >/dev/null 2>&1 &
 
-exec "$PY" -m http.server "$PORT"
+exec "$PY" "$HERE/serve.py" "$PORT"

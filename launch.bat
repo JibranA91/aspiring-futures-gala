@@ -1,7 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
 title Aspiring Futures - Gala Display  (keep this window open)
-cd /d "%~dp0gala"
 
 rem Find this laptop's LAN IP (the address another device on the same network uses).
 set "LANIP="
@@ -25,7 +24,7 @@ rem Open this laptop's browser a couple of seconds after the server comes up.
 start "" /min cmd /c "ping -n 3 127.0.0.1 >nul & start http://localhost:8080/"
 where python >nul 2>nul
 if errorlevel 1 (
-  py -m http.server 8080
+  py "%~dp0serve.py" 8080
 ) else (
-  python -m http.server 8080
+  python "%~dp0serve.py" 8080
 )
