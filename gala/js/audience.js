@@ -19,7 +19,7 @@ const STAGE_COL = ['var(--color-accent-500)', 'var(--color-accent-2-400)', 'var(
 const DEFAULTS = {
   eventName: 'An Evening for Aspiring Futures',
   tagline: 'The best way to predict the future is to shape it',
-  goal: 100000, showGoal: false, showTotal: true,
+  goal: 10000, showGoal: false, showTotal: true,
   pace: 1, hold: false,
   qrCaption: 'Scan to give — every gift is matched to a classroom in Pakistan.',
   categories: [
@@ -51,7 +51,7 @@ function singularUnit(u) {
 class Component extends DCLogic {
   state = {
     s: null, current: null, annLeaving: false, annCat: null, ambientIdx: 0,
-    sparkOn: false, goalTok: 0, banner: null, scale: 1,
+    sparkOn: false, goalTok: 0, banner: null, goalHero: null, scale: 1,
     mode: null, code: '', codeDraft: '', pairError: '', link: null, ctrlSeen: 0, now: Date.now()
   };
   timers = [];
@@ -100,6 +100,7 @@ class Component extends DCLogic {
     this.timers.forEach(clearTimeout);
     clearTimeout(this._hold);
     clearTimeout(this._out);
+    clearTimeout(this._gh);
     clearInterval(this.alive);
     clearInterval(this.clock);
     clearInterval(this.ambientCycle);
@@ -178,11 +179,10 @@ class Component extends DCLogic {
     this.setState({ s: next });
 
     if (nt > pt) this.spark();
-    if (prev && Number(next.goal) !== Number(prev.goal)) {
-      this.setState({ goalTok: Date.now() });
-      if (next.showGoal) this.flash('A new goal: ' + money(next.goal));
-    }
-    if (prev && next.showGoal && !prev.showGoal) this.flash('Our goal tonight: ' + money(next.goal));
+    if (prev && Number(next.goal) !== Number(prev.goal)) this.setState({ goalTok: Date.now() });
+    const goalChanged = prev && Number(next.goal) !== Number(prev.goal);
+    const goalRevealed = prev && next.showGoal && !prev.showGoal;
+    if (prev && next.showGoal && Number(next.goal) > 0 && (goalChanged || goalRevealed)) this.heroGoal(money(next.goal));
     if (next.showGoal && Number(next.goal) > 0 && nt > pt) {
       const g = Number(next.goal);
       const marks = [[0.25, 'A quarter of the way there'], [0.5, 'Halfway to the goal'], [0.75, 'Three quarters of the way'], [1, 'We reached the goal!']];
@@ -209,6 +209,14 @@ class Component extends DCLogic {
     this.setState({ sparkOn: false });
     requestAnimationFrame(() => this.setState({ sparkOn: true }));
     this._st = setTimeout(() => this.setState({ sparkOn: false }), 2200);
+  }
+
+  // A goal update reveals the new figure big in the center, then it shrinks up
+  // to its resting spot above the bar — so the room can't miss the new target.
+  heroGoal(label) {
+    clearTimeout(this._gh);
+    this.setState({ goalHero: { label: label, tok: Date.now() } });
+    this._gh = setTimeout(() => this.setState({ goalHero: null }), 2700);
   }
 
   // Each shown gift is announced in a compact in-place card. Gifts that arrive
@@ -372,6 +380,9 @@ class Component extends DCLogic {
       total, giftCount: live.length,
       showGoal, hideGoal: !showGoal,
       goalLabel: money(goal), goalTok: this.state.goalTok,
+      goalHero: !!this.state.goalHero,
+      goalHeroLabel: this.state.goalHero ? this.state.goalHero.label : '',
+      goalHeroKey: this.state.goalHero ? this.state.goalHero.tok : 0,
       levelHeight: Math.max(1.5, pct * 100).toFixed(2) + '%',
       levelPctLabel: Math.round(pct * 100) + '%',
       tubeAnim: this.state.sparkOn ? 'afTubePulse 1.6s ease-out both' : 'none',

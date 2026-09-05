@@ -16,7 +16,7 @@ const DISPLAY_FILE = 'audience.html';
 const DEFAULTS = {
   eventName: 'An Evening for Aspiring Futures',
   tagline: 'The best way to predict the future is to shape it',
-  goal: 100000, showGoal: false, showTotal: true,
+  goal: 10000, showGoal: false, showTotal: true,
   pace: 1, hold: false, autoExport: true,
   qrCaption: 'Scan to give — every gift is matched to a classroom in Pakistan.',
   categories: [
@@ -100,7 +100,7 @@ class Component extends DCLogic {
   state = {
     s: null,
     f: { name: '', amount: '', anon: false, vals: { status: 'Paid' } },
-    goalDraft: 100000, err: '', savedAt: null, exportedAt: null, live: false, restoreNote: '',
+    goalDraft: 10000, err: '', savedAt: null, exportedAt: null, live: false, restoreNote: '',
     mode: 'paired', code: '', link: null, copied: 0, settingsOpen: false,
     fsSupported: false, backupName: '', backupReady: false, backupPrompt: false, confirmReset: false
   };
@@ -578,7 +578,7 @@ class Component extends DCLogic {
       onGoalDraft: (e) => this.setState({ goalDraft: e.target.value }),
       applyGoal: () => {
         const g = Number(this.state.goalDraft);
-        if (g > 0) this.commit({ goal: g });
+        if (g > 0) this.commit({ goal: g, showGoal: true });
       },
       toggleGoal: () => this.commit({ showGoal: !s.showGoal }),
       goalOnBg: s.showGoal ? on : off,
