@@ -148,4 +148,5 @@ gala/
 State is shared through one `localStorage` key plus the link transport, so the
 console, the embedded preview, and the projector window all stay in sync.
 
-Source handoff bundle: `../aspiring-futures-donation-display/`.
+Built from a Claude Design handoff — the `aspiring-futures-donation-display/`
+bundle (kept locally and git-ignored; not part of this repo).

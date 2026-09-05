@@ -13,3 +13,6 @@ desktop.ini
 
 # Logs
 *.log
+
+# Claude Design source handoff bundle — kept locally, not part of the repo
+aspiring-futures-donation-display/
