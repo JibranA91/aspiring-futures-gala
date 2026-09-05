@@ -1,6 +1,6 @@
 /* controller.js — Gala Fundraising Controller.
  *
- * Ported verbatim from the Claude Design prototype's component logic, now
+ * Ported verbatim from the original prototype's component logic, now
  * running on the local dcx.js runtime instead of the CDN React/streaming
  * runtime. The ONLY change from the prototype source: DISPLAY_FILE points at
  * this app's real audience page ("audience.html") instead of the .dc.html

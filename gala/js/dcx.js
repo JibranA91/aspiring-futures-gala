@@ -1,6 +1,6 @@
 /* dcx.js — a small, self-contained runtime for the Aspiring Futures gala app.
  *
- * The two screens were prototyped on Claude Design's runtime (CDN React + Babel
+ * The two screens were prototyped on a heavyweight CDN runtime (React + Babel
  * + a streaming template compiler, loaded via support.js). This file replaces
  * all of that with ~250 lines of dependency-free vanilla JS, so the app is a
  * plain static site with no build step and no CDN framework — it reproduces the

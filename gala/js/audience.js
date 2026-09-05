@@ -1,6 +1,6 @@
 /* audience.js — Gala Audience Screen (the projector view).
  *
- * Ported verbatim from the Claude Design prototype's component logic, now
+ * Ported verbatim from the original prototype's component logic, now
  * running on the local dcx.js runtime. Props the prototype received from its
  * host (embedded / showQr / wallLength) are read here from the URL instead:
  *   #embed=1   → embedded preview mode (used by the controller's <iframe>)

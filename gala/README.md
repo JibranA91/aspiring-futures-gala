@@ -12,20 +12,20 @@ framework CDN. Open it in a browser and it runs.
 
 ## Running it
 
-Serve the `gala/` folder over HTTP (not `file://` — the live cross-window sync
-relies on a real origin). Any static server works:
+**Easiest:** from the project root, double-click **`launch.bat`** (Windows) or
+run **`./launch.sh`** (macOS / Linux / Git Bash). It starts a local server on
+port **8080** and opens the control console in your browser. Keep that window
+open during the event; close it to stop.
+
+**Manually:** serve the `gala/` folder over HTTP — not `file://`, since the live
+cross-window sync needs a real origin:
 
 ```bash
 # from inside the gala/ folder
-python -m http.server 8712
+python -m http.server 8080
 ```
 
-```bash
-# or, with Node installed
-npx serve .
-```
-
-Then open **http://localhost:8712/** for the control console.
+Then open **http://localhost:8080/** for the control console.
 
 > Fonts (Google Fonts) and the two-laptop relay (MQTT) need internet. Everything
 > else — entering gifts, the audience animations, single-laptop mode, local
@@ -110,10 +110,9 @@ Then open **http://localhost:8712/** for the control console.
 
 ## How it's built
 
-The screens were designed on [Claude Design](https://claude.ai/design) as
-HTML/CSS/JS prototypes that ran on that tool's runtime (CDN React + Babel + a
-streaming template engine). This app **replaces that entire runtime** with a
-small dependency-free one, so it's a plain static site.
+The screens started as HTML/CSS/JS prototypes that ran on a heavyweight CDN
+runtime (React + Babel + a streaming template engine). This app **replaces that
+entire runtime** with a small dependency-free one, so it's a plain static site.
 
 ```
 gala/
@@ -148,5 +147,5 @@ gala/
 State is shared through one `localStorage` key plus the link transport, so the
 console, the embedded preview, and the projector window all stay in sync.
 
-Built from a Claude Design handoff — the `aspiring-futures-donation-display/`
-bundle (kept locally and git-ignored; not part of this repo).
+Built from a design handoff — the `aspiring-futures-donation-display/` bundle
+(kept locally and git-ignored; not part of this repo).

@@ -8,11 +8,12 @@ desktop.ini
 *~
 *.swp
 
-# Local tool state
-.claude/settings.local.json
+# Local editor / assistant files (kept out of the repo)
+.claude/
+CLAUDE.md
 
 # Logs
 *.log
 
-# Claude Design source handoff bundle — kept locally, not part of the repo
+# Design source handoff bundle — kept locally, not part of the repo
 aspiring-futures-donation-display/
