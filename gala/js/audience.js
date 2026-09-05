@@ -19,7 +19,7 @@ const STAGE_COL = ['var(--color-accent-500)', 'var(--color-accent-2-400)', 'var(
 const DEFAULTS = {
   eventName: 'An Evening for Aspiring Futures',
   tagline: 'The best way to predict the future is to shape it',
-  goal: 100000, showGoal: false, showTotal: true,
+  goal: 10000, showGoal: false, showTotal: true,
   pace: 1, hold: false,
   qrCaption: 'Scan to give — every gift is matched to a classroom in Pakistan.',
   categories: [
