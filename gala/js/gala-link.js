@@ -57,18 +57,63 @@
     for (let i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i);
     return b;
   }
-  async function keyFor(secret) {
-    const h = await crypto.subtle.digest('SHA-256', enc.encode('af-gala:' + secret));
-    return crypto.subtle.importKey('raw', h, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+  // Code-keyed stream cipher. WebCrypto's crypto.subtle only exists in a secure
+  // context (https / localhost), so it is UNAVAILABLE when the projector is
+  // loaded over http://<lan-ip>. This pure-JS cipher runs anywhere and both ends
+  // use it, so they always interoperate. It obfuscates donor data on the shared
+  // public broker; it is deliberately lightweight, not strong cryptography —
+  // which this public-board use case doesn't require.
+  function keyFor(secret) {
+    const src = 'af-gala:' + String(secret);
+    const k = new Uint32Array(8);
+    let h = 0x811c9dc5;
+    for (let i = 0; i < 8; i++) {
+      for (let j = 0; j < src.length; j++) { h = (Math.imul(h ^ src.charCodeAt(j), 0x01000193) + i * 0x9e3779b9) >>> 0; }
+      h ^= h >>> 15; h = Math.imul(h, 0x2c1b3c6d) >>> 0; h ^= h >>> 13;
+      k[i] = h >>> 0;
+    }
+    return k;
   }
-  async function seal(key, obj) {
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(JSON.stringify(obj)));
-    return JSON.stringify({ v: 1, iv: b64(iv), d: b64(ct) });
+  function keystream(k, nonce, len) {
+    let x = 0x9e3779b9 >>> 0;
+    for (let i = 0; i < k.length; i++) x = Math.imul(x ^ k[i], 0x85ebca6b) >>> 0;
+    for (let i = 0; i < nonce.length; i++) x = Math.imul(x ^ (nonce[i] + 1), 0xc2b2ae35) >>> 0;
+    const out = new Uint8Array(len);
+    for (let i = 0; i < len; i += 4) {
+      x = (x + 0x9e3779b9) >>> 0;
+      let z = x;
+      z = Math.imul(z ^ (z >>> 16), 0x85ebca6b) >>> 0;
+      z = Math.imul(z ^ (z >>> 13), 0xc2b2ae35) >>> 0;
+      z = (z ^ (z >>> 16)) >>> 0;
+      out[i] = z & 0xff;
+      if (i + 1 < len) out[i + 1] = (z >>> 8) & 0xff;
+      if (i + 2 < len) out[i + 2] = (z >>> 16) & 0xff;
+      if (i + 3 < len) out[i + 3] = (z >>> 24) & 0xff;
+    }
+    return out;
   }
-  async function unseal(key, txt) {
+  function randBytes(n) {
+    const a = new Uint8Array(n);
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) crypto.getRandomValues(a);
+    else for (let i = 0; i < n; i++) a[i] = (Math.random() * 256) | 0;
+    return a;
+  }
+  function seal(key, obj) {
+    const pt = enc.encode(JSON.stringify(obj));
+    const nonce = randBytes(8);
+    const ks = keystream(key, nonce, pt.length);
+    const ct = new Uint8Array(pt.length);
+    for (let i = 0; i < pt.length; i++) ct[i] = pt[i] ^ ks[i];
+    return JSON.stringify({ v: 2, n: b64(nonce), d: b64(ct) });
+  }
+  function unseal(key, txt) {
     const p = JSON.parse(txt);
-    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(p.iv) }, key, unb64(p.d));
+    if (!p || !p.n || !p.d) throw new Error('bad payload');
+    const nonce = unb64(p.n);
+    const ct = unb64(p.d);
+    const ks = keystream(key, nonce, ct.length);
+    const pt = new Uint8Array(ct.length);
+    for (let i = 0; i < ct.length; i++) pt[i] = ct[i] ^ ks[i];
     return JSON.parse(dec.decode(pt));
   }
 
@@ -153,7 +198,7 @@
 
       client.on('message', async (topic, payload) => {
         try {
-          const obj = await unseal(L._key, payload.toString());
+          const obj = unseal(L._key, payload.toString());
           if (!obj || !obj.kind) return;
           if (obj.from === role && obj.kind === 'presence') return;
           onMessage(obj.kind, obj.body, 'paired');
@@ -181,7 +226,7 @@
       if (L.mode !== 'paired' || !L._client || L.broker !== 'connected' || !L._key) return;
       const retain = kind === 'state';
       try {
-        const txt = await seal(L._key, { kind, body, from: role });
+        const txt = seal(L._key, { kind, body, from: role });
         L._client.publish('afgala/' + L._room + '/' + (retain ? 'state' : 'presence'), txt, { qos: retain ? 1 : 0, retain });
       } catch (e) {}
     }
@@ -199,7 +244,7 @@
         if (!p) { L.mode = 'local'; L.code = ''; L.broker = 'off'; status(); return false; }
         L.code = p.code;
         L._room = p.room;
-        L._key = await keyFor(p.secret);
+        L._key = keyFor(p.secret);
         L._bi = brokerIndexFor(p.room);
         connectBroker();
       } else {
