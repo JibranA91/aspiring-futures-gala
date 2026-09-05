@@ -51,7 +51,7 @@ function singularUnit(u) {
 class Component extends DCLogic {
   state = {
     s: null, current: null, annLeaving: false, annCat: null, ambientIdx: 0,
-    sparkOn: false, goalTok: 0, banner: null, goalHero: null, scale: 1,
+    sparkOn: false, goalTok: 0, banner: null, goalHero: null, scale: 1, wallFit: 8,
     mode: null, code: '', codeDraft: '', pairError: '', link: null, ctrlSeen: 0, now: Date.now()
   };
   timers = [];
@@ -87,7 +87,7 @@ class Component extends DCLogic {
 
     this.measure();
     if (window.ResizeObserver && this.root) {
-      this.ro = new ResizeObserver(() => this.measure());
+      this.ro = new ResizeObserver(() => { this.measure(); this._wallDirty = true; this.measureWall(); });
       this.ro.observe(this.root);
     }
     window.addEventListener('resize', this.measure);
@@ -154,7 +154,11 @@ class Component extends DCLogic {
     this.bootLink('local', '');
   };
 
-  componentDidUpdate() { this.syncCounters(); }
+  componentDidUpdate() {
+    this.syncCounters();
+    if (this._wallCandidates !== this._wallPrevCand) { this._wallPrevCand = this._wallCandidates; this._wallDirty = true; }
+    this.measureWall();
+  }
 
   measure = () => {
     const el = this.root;
@@ -166,6 +170,32 @@ class Component extends DCLogic {
 
   setRoot = (el) => { if (el) { this.root = el; requestAnimationFrame(this.measure); } };
   setFrame = (el) => { this.frame = el; };
+  setWallBox = (el) => { this.wallBox = el; if (el) { this._wallDirty = true; requestAnimationFrame(this.measureWall); } };
+
+  // Fit as many donors as the panel holds, packing by each row's real height so
+  // a single tall row (e.g. one with a "Pledged" line) doesn't shrink the count.
+  // Two passes, both before the browser paints (so no flicker): first render every
+  // candidate row to learn its height, then keep only those that fully fit. Re-runs
+  // when the panel resizes or the donor count changes (set via _wallDirty).
+  // clientHeight/offsetTop ignore the frame's CSS scale, so this is resolution-free.
+  measureWall = () => {
+    if (this.props.wallLength != null) return; // fixed count (e.g. the console preview) — no auto-fit
+    const box = this.wallBox;
+    if (!box || !this._wallDirty) return;
+    const avail = box.clientHeight;
+    if (!avail) return;
+    const candidates = Math.min(40, this._wallCandidates || 0);
+    const kids = box.children;
+    // Probe: render every candidate once so we can measure real heights. The
+    // wallFit guard stops this branch re-firing forever if the render count is
+    // capped elsewhere (which is what froze the console preview).
+    if (kids.length < candidates && this.state.wallFit < candidates) { this.setState({ wallFit: candidates }); return; }
+    let fit = 0;
+    for (var i = 0; i < kids.length; i++) { if (kids[i].offsetTop + kids[i].offsetHeight <= avail + 0.5) fit++; else break; }
+    this._wallDirty = false;
+    fit = Math.max(1, fit);
+    if (fit !== this.state.wallFit) this.setState({ wallFit: fit });
+  };
 
   apply(next) {
     if (!next) return;
@@ -305,6 +335,7 @@ class Component extends DCLogic {
   renderVals() {
     const s = Object.assign({}, DEFAULTS, this.state.s || {});
     const live = (s.donations || []).filter((d) => !d.voided);
+    this._wallCandidates = live.length; // how many rows the fit pass may probe
     const total = live.reduce((a, d) => a + (Number(d.amount) || 0), 0);
     const cats = (s.categories || []).filter((c) => c && c.name);
     const sum = cats.reduce((a, c) => a + (Number(c.pct) || 0), 0) || 1;
@@ -374,7 +405,7 @@ class Component extends DCLogic {
       linkChip: chip, linkChipColor: chipColor,
       rootHeight: this.props.embedded ? '100%' : '100vh',
       frameTransform: 'translate(-50%,-50%) scale(' + this.state.scale + ')',
-      setRoot: this.setRoot, setFrame: this.setFrame,
+      setRoot: this.setRoot, setFrame: this.setFrame, setWallBox: this.setWallBox,
       eventName: s.eventName, tagline: s.tagline,
       showTotal: !!s.showTotal, hideTotal: !s.showTotal,
       total, giftCount: live.length,
@@ -403,7 +434,7 @@ class Component extends DCLogic {
       ambientProgramName: ambCat ? ambCat.name : 'Tonight’s gifts',
       ambientKey: ambCat ? ambCat.id : 'none',
       costLine: ambCat ? ('Funded from ' + Math.round((Number(ambCat.pct) || 0) / sum * 100) + '% of tonight’s gifts.') : 'Funded across every program.',
-      wall: live.slice().reverse().slice(0, Math.max(1, Number(this.props.wallLength) || 7)).map((d) => ({
+      wall: live.slice().reverse().slice(0, this.props.wallLength != null ? Math.max(1, Number(this.props.wallLength)) : Math.max(1, this.state.wallFit || 8)).map((d) => ({
         name: d.anon ? 'A friend of Aspiring Futures' : (d.name || 'A friend of Aspiring Futures'),
         amountLabel: money(d.amount),
         meta: shown(d, 2).join(' · ')
@@ -438,7 +469,7 @@ function galaProps() {
   return {
     embedded: /embed=1/.test(h),
     showQr: !/qr=0/.test(h),
-    wallLength: wall ? Number(wall) : 7
+    wallLength: wall ? Number(wall) : null // null → auto-fit to the panel height
   };
 }
 

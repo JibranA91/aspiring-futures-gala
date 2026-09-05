@@ -147,7 +147,7 @@ a:hover { color: var(--color-accent-300); }
     <div style="width: 452px; flex: none; display: flex; flex-direction: column; gap: 22px; min-height: 0">
       <div style="flex: 1; min-height: 0; background: var(--color-surface); border: 1px solid var(--color-divider); border-radius: 28px; padding: 26px 26px 8px; display: flex; flex-direction: column; overflow: hidden">
         <div style="font-family: var(--font-heading); font-size: 30px; line-height: 1; margin-bottom: 18px; color: var(--color-accent-200)">Tonight's donors</div>
-        <div style="display: flex; flex-direction: column; gap: 12px; overflow: hidden">
+        <div ref="{{ setWallBox }}" style="position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; overflow: hidden">
           <sc-for list="{{ wall }}" as="d" hint-placeholder-count="6">
             <div style="display: flex; align-items: baseline; gap: 14px; padding-bottom: 12px; border-bottom: 1px solid color-mix(in srgb, #f7f4ef 12%, transparent)">
               <div style="flex: 1; min-width: 0">
@@ -157,10 +157,10 @@ a:hover { color: var(--color-accent-300); }
               <div style="font-family: var(--font-heading); font-size: 26px; line-height: 1; color: var(--color-accent-400); flex: none">{{ d.amountLabel }}</div>
             </div>
           </sc-for>
+          <sc-if value="{{ wallEmpty }}">
+            <div style="font-size: 18px; color: var(--color-neutral-400)">The first gift of the evening goes here.</div>
+          </sc-if>
         </div>
-        <sc-if value="{{ wallEmpty }}">
-          <div style="font-size: 18px; color: var(--color-neutral-400)">The first gift of the evening goes here.</div>
-        </sc-if>
       </div>
 
       <sc-if value="{{ showQr }}" hint-placeholder-val="{{ true }}">
