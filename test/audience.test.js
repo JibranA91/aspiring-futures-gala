@@ -35,3 +35,27 @@ test('singularUnit singularizes program units', () => {
   assert.equal(A.singularUnit('families'), 'family');
   assert.equal(A.singularUnit('students'), 'student');
 });
+
+test('renderVals builds the board bindings without throwing', () => {
+  const comp = new A.Component();
+  comp.props = { wallLength: null, showQr: true, embedded: false };
+  comp.state = Object.assign({}, comp.state, {
+    s: {
+      goal: 10000, showGoal: true, showTotal: true,
+      categories: A.DEFAULTS.categories,
+      fields: [{ id: 'status', label: 'Status', type: 'choice', options: ['Paid', 'Pledged'], onScreen: true }],
+      donations: [
+        { id: 'a', ts: '2026-09-05T00:00:00.000Z', name: 'The Rahman Family', anon: false, amount: 2500, fields: { status: 'Pledged' }, voided: false },
+        { id: 'b', ts: '2026-09-05T00:01:00.000Z', name: '', anon: true, amount: 1000, fields: { status: 'Paid' }, voided: true }
+      ]
+    }
+  });
+  const rv = comp.renderVals();
+  assert.equal(rv.total, 2500);        // the voided gift is excluded
+  assert.equal(rv.giftCount, 1);
+  assert.equal(rv.goalLabel, '$10,000');
+  assert.ok(Array.isArray(rv.cats) && rv.cats.length === 4);
+  assert.equal(rv.wall.length, 1);     // only the non-voided donor reaches the wall
+  assert.equal(rv.wall[0].name, 'The Rahman Family');
+  assert.equal(rv.wall[0].meta, 'Pledged');
+});
