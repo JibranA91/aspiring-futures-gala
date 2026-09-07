@@ -2,8 +2,12 @@
   "name": "aspiring-futures-gala",
   "version": "1.0.0",
   "private": true,
-  "description": "Live gala donation display. This manifest exists only to run the core-logic tests; the app itself is a build-free static site with no dependencies.",
+  "description": "Live gala donation display. This manifest only holds the dev/test tooling (unit tests via node --test, end-to-end via Playwright); the app itself is a build-free static site with no runtime dependencies.",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
   }
 }
