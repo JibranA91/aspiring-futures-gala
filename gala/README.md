@@ -45,7 +45,7 @@ Then open **http://localhost:8080/** for the control console.
 ### Two laptops (one records, one projects over the internet)
 
 1. On the recording laptop, open **Gala Control**. In **Settings** keep
-   **Second laptop** selected — it shows a **pairing code** (e.g. `M58QZ-U7UGP`).
+   **Second laptop** selected — it shows a **4-digit pairing code** (e.g. `1234`).
 2. On the projector laptop, open **`audience.html`** and type that code (or use
    **Copy audience link** on the console and open the link on the projector).
 3. They connect through a public MQTT relay. **Donor names and amounts are
@@ -59,13 +59,22 @@ Then open **http://localhost:8080/** for the control console.
   chips are there for speed), then **Add & show on screen** — this plays the gift
   animation on the projector. **Add quietly** records it without the animation.
 - **⌘/Ctrl + Enter** adds-and-shows from anywhere.
-- The **Log** lets you **Show** any past gift again or **Void** a mistaken entry
-  (voids are excluded from totals but kept in the CSV).
+- The **Log** lets you **Show** any past gift again, or **Edit** it — the edit
+  dialog changes the donor, amount and fields, and **voids or restores** the gift
+  from the same place (voided gifts drop out of the totals and the audience screen
+  but stay in the CSV).
 - On the audience screen each shown gift appears as a compact card **over** the
   live board (the totals, thermometer and donor wall stay visible), translated
   into a sponsorship program as **people supported for a year** — e.g. "6 children
   supported for a year of shelter home living". Gifts shown in quick succession
   **queue** and play one after another rather than cutting each other off.
+
+### Celebrations
+
+- The console's **Celebrate** panel fires a burst on the audience screen —
+  **Confetti**, **Balloons**, **Fireworks**, or a combined **Big finish** — for a
+  standout gift or the moment you hit the goal. Each plays *over* the live board
+  without taking it over.
 
 ### Settings
 
@@ -78,7 +87,10 @@ Then open **http://localhost:8080/** for the control console.
 - **Gift fields** — add/rename the fields you collect per gift (text / number /
   choice), and choose which appear on the audience screen vs. console-only.
 - **Screen & wording** — event name, tagline, QR caption, and animation pace.
-- **The goal** — set a target and reveal the goal and/or running total on screen.
+- **The goal** (the card on the console, not this dialog) — set a target and
+  toggle whether the goal and/or running total show on screen. Updating the
+  target plays a **big reveal**: the new goal appears large in the centre of the
+  audience screen, then shrinks up to its spot above the thermometer.
 - **Impact figures** — each shown gift is translated into a **randomly chosen
   program** (from "Where it goes", gated by gift size) as the number of people
   it supports for a year — e.g. "6 families supported for a year of family
@@ -126,8 +138,9 @@ gala/
     gala-link.js    controller ⇄ audience transport: BroadcastChannel on one
                     machine, encrypted MQTT-over-WebSocket between two   (reused)
     image-slot.js   the "Give from your seat" QR drop slot (localStorage-backed)
-    controller.js   Gala Control component logic   (ported from the prototype)
-    audience.js     Audience Screen component logic (ported from the prototype)
+    celebrations.js confetti / fireworks / balloons overlay for the audience
+    controller.js   Gala Control console logic
+    audience.js     Audience Screen logic
 ```
 
 - **`dcx.js`** is the substantive new piece. It reproduces exactly the subset of
@@ -136,10 +149,11 @@ gala/
   controlled inputs, and keyed reconciliation so focused fields keep their caret
   and CSS animations replay only when a key changes or a node mounts.
 - The **component logic** (`controller.js`, `audience.js`) and the **templates**
-  (inside each HTML file's `<template id="tpl">`) are ported from the design
-  prototype essentially verbatim — the only change is that the console's
-  "audience window" now points at this app's real `audience.html`, and the live
-  preview pane embeds it as an `<iframe>`.
+  (inside each HTML file's `<template id="tpl">`) started from the design prototype
+  and have since grown with the features built here — celebrations, the big goal
+  reveal, editing logged gifts, and the auto-fitting donor wall. The console's live
+  preview pane embeds the real `audience.html` as an `<iframe>`. Each app file also
+  carries a small, browser-safe hook so its pure logic can be imported by the tests.
 - **`gala-link.js`** and **`ds/styles.css`** are reused unchanged from the
   handoff bundle; they were already framework-independent.
 
@@ -148,3 +162,17 @@ console, the embedded preview, and the projector window all stay in sync.
 
 Built from a design handoff — the `aspiring-futures-donation-display/` bundle
 (kept locally and git-ignored; not part of this repo).
+
+---
+
+## Tests
+
+The core logic — CSV export/restore, the saved-state upgrade path, totals and
+impact math, the pairing cipher, and the donor-wall fit — has a dependency-free
+unit suite that runs on Node's built-in runner. From the repo root:
+
+```bash
+node --test
+```
+
+It also runs on every push and pull request via GitHub Actions.
