@@ -602,7 +602,8 @@ class Component extends DCLogic {
       goalPctLabel: Number(s.goal) > 0 ? Math.round(total / Number(s.goal) * 100) + '%' : '—',
 
       log: all.slice().reverse().map((d) => ({
-        name: d.anon ? 'Anonymous' : (d.name || 'Anonymous'),
+        name: d.name || 'Anonymous',
+        anon: !!d.anon,
         amountLabel: money(d.amount),
         opacity: d.voided ? 0.4 : 1,
         meta: [new Date(d.ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })]
