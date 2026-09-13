@@ -84,7 +84,7 @@ input::placeholder { color: var(--color-neutral-500); }
         <div style="display: flex; flex-direction: column; gap: 16px">
           <div>
             <span class="aflab">Donor name</span>
-            <input class="afin" type="text" placeholder="e.g. The Rahman Family" value="{{ fName }}" onChange="{{ onName }}" onKeyDown="{{ onKey }}" disabled="{{ fAnon }}">
+            <input class="afin" type="text" placeholder="e.g. The Rahman Family" value="{{ fName }}" onChange="{{ onName }}" onKeyDown="{{ onKey }}">
             <div style="display: flex; gap: 8px; margin-top: 10px">
               <button class="afb afb-out" onClick="{{ setNamed }}" style="flex: 1; background: {{ namedBg }}">Named</button>
               <button class="afb afb-out" onClick="{{ setAnon }}" style="flex: 1; background: {{ anonBg }}">Anonymous</button>
@@ -408,7 +408,7 @@ input::placeholder { color: var(--color-neutral-500); }
         <div style="display: flex; flex-direction: column; gap: 16px">
           <div>
             <span class="aflab">Donor name</span>
-            <input class="afin" type="text" placeholder="e.g. The Rahman Family" value="{{ efName }}" onChange="{{ onEditName }}" disabled="{{ efAnon }}">
+            <input class="afin" type="text" placeholder="e.g. The Rahman Family" value="{{ efName }}" onChange="{{ onEditName }}">
             <div style="display: flex; gap: 8px; margin-top: 10px">
               <button class="afb afb-out" onClick="{{ setEditNamed }}" style="flex: 1; background: {{ editNamedBg }}">Named</button>
               <button class="afb afb-out" onClick="{{ setEditAnon }}" style="flex: 1; background: {{ editAnonBg }}">Anonymous</button>

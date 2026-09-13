@@ -212,7 +212,7 @@ class Component extends DCLogic {
     const f = this.state.f;
     const amount = Number(f.amount);
     if (!(amount > 0)) { this.setState({ err: 'Enter an amount greater than zero.' }); return; }
-    if (!f.anon && !f.name.trim()) { this.setState({ err: 'Add a donor name, or mark the gift anonymous.' }); return; }
+    if (!f.name.trim()) { this.setState({ err: 'Add a donor name.' }); return; }
     const defs = this.state.s.fields || [];
     const vals = {};
     defs.forEach((fd) => {
@@ -220,7 +220,7 @@ class Component extends DCLogic {
       const v = typeof raw === 'string' ? raw.trim() : raw;
       if (v !== '' && v != null) vals[fd.id] = v;
     });
-    const d = { id: uid(), ts: new Date().toISOString(), name: f.anon ? '' : f.name.trim(), anon: !!f.anon, amount, fields: vals, voided: false };
+    const d = { id: uid(), ts: new Date().toISOString(), name: f.name.trim(), anon: !!f.anon, amount, fields: vals, voided: false };
     const s = this.commit({
       donations: (this.state.s.donations || []).concat([d]),
       stage: show ? { token: Date.now(), id: d.id } : this.state.s.stage
@@ -266,7 +266,7 @@ class Component extends DCLogic {
     if (!ef) return;
     const amount = Number(ef.amount);
     if (!(amount > 0)) { this.setState({ editErr: 'Enter an amount greater than zero.' }); return; }
-    if (!ef.anon && !ef.name.trim()) { this.setState({ editErr: 'Add a donor name, or mark the gift anonymous.' }); return; }
+    if (!ef.name.trim()) { this.setState({ editErr: 'Add a donor name.' }); return; }
     const defs = (this.state.s.fields) || [];
     const vals = Object.assign({}, ef.vals); // keeps values for any retired fields
     defs.forEach((fd) => {
@@ -277,7 +277,7 @@ class Component extends DCLogic {
     const id = this.state.editId;
     this.commit({
       donations: (this.state.s.donations || []).map((x) => x.id === id
-        ? Object.assign({}, x, { name: ef.anon ? '' : ef.name.trim(), anon: !!ef.anon, amount: amount, fields: vals, voided: !!ef.voided })
+        ? Object.assign({}, x, { name: ef.name.trim(), anon: !!ef.anon, amount: amount, fields: vals, voided: !!ef.voided })
         : x)
     });
     this.setState({ editId: null, editForm: null, editErr: '' });
@@ -293,7 +293,7 @@ class Component extends DCLogic {
       .concat(defs.map((f) => f.label + (f.retired ? ' (removed)' : '')))
       .concat(['Voided']);
     const rows = (s.donations || []).map((d, i) => [
-      i + 1, d.ts, d.anon ? 'Anonymous' : d.name, d.anon ? 'yes' : 'no', Number(d.amount) || 0
+      i + 1, d.ts, d.name || (d.anon ? 'Anonymous' : ''), d.anon ? 'yes' : 'no', Number(d.amount) || 0
     ].concat(defs.map((f) => (d.fields || {})[f.id] == null ? '' : (d.fields || {})[f.id]))
       .concat([d.voided ? 'yes' : 'no']));
     return [head].concat(rows).map((r) => r.map(csvCell).join(',')).join('\n');
