@@ -10,6 +10,7 @@
  * The template lives in <template id="tpl"> in audience.html.
  */
 const DCLogic = (typeof window !== 'undefined' && window.DCX) ? window.DCX.DCLogic : class {};
+const Brand = typeof window !== 'undefined' ? window.FundraiserBrand : require('./branding.js');
 
 const KEY = 'af-gala-state-v1';
 const CODE_KEY = 'af-gala-link-v1';
@@ -17,6 +18,7 @@ const POD = ['var(--color-accent-500)', 'var(--color-accent-2-400)', 'var(--colo
 const STAGE_COL = ['var(--color-accent-500)', 'var(--color-accent-2-400)', 'var(--color-accent-300)', 'var(--color-accent-2-500)', 'var(--color-neutral-300)', 'var(--color-accent-600)'];
 
 const DEFAULTS = {
+  anonymousLabel: Brand.anonymousTemplate,
   eventName: 'An Evening for Aspiring Futures',
   tagline: 'The best way to predict the future is to shape it',
   goal: 10000, showGoal: false, showTotal: true,
@@ -31,9 +33,9 @@ const DEFAULTS = {
   donations: [], stage: null
 };
 
-function money(n) {
+function money(n, currency = 'USD') {
   const v = Math.round(Number(n) || 0);
-  return '$' + v.toLocaleString('en-US');
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(v);
 }
 function liveTotal(s) {
   return (s.donations || []).reduce((a, d) => d.voided ? a : a + (Number(d.amount) || 0), 0);
@@ -118,11 +120,15 @@ class Component extends DCLogic {
         this.link = window.GalaLink.create({
           role: 'display',
           onMessage: (kind, body) => {
+            if (kind === 'snapshot') { this.rev = 0; this.clearStage(); this.apply(body); }
             if (kind === 'state') this.apply(body);
             if (kind === 'presence' && body && body.role === 'controller') this.setState({ ctrlSeen: Date.now() });
             if (kind === 'celebrate' && body && body.type) this.celebrate(body.type);
           },
-          onStatus: (st) => this.setState({ link: st })
+          onStatus: (st) => {
+            this.setState({ link: st });
+            if (st.broker === 'failed' && st.lastError) this.setState({ mode: null, pairError: st.lastError });
+          }
         });
       }
       this.link.setMode(mode, code);
@@ -155,6 +161,7 @@ class Component extends DCLogic {
   };
 
   componentDidUpdate() {
+    if (window.FundraiserBrand) window.FundraiserBrand.apply(this.state.s?.branding);
     this.syncCounters();
     if (this._wallCandidates !== this._wallPrevCand) { this._wallPrevCand = this._wallCandidates; this._wallDirty = true; }
     this.measureWall();
@@ -212,7 +219,7 @@ class Component extends DCLogic {
     if (prev && Number(next.goal) !== Number(prev.goal)) this.setState({ goalTok: Date.now() });
     const goalChanged = prev && Number(next.goal) !== Number(prev.goal);
     const goalRevealed = prev && next.showGoal && !prev.showGoal;
-    if (prev && next.showGoal && Number(next.goal) > 0 && (goalChanged || goalRevealed)) this.heroGoal(money(next.goal));
+    if (prev && next.showGoal && Number(next.goal) > 0 && (goalChanged || goalRevealed)) this.heroGoal(money(next.goal, next.branding?.currency));
     if (next.showGoal && Number(next.goal) > 0 && nt > pt) {
       const g = Number(next.goal);
       const marks = [[0.25, 'A quarter of the way there'], [0.5, 'Halfway to the goal'], [0.75, 'Three quarters of the way'], [1, 'We reached the goal!']];
@@ -312,7 +319,9 @@ class Component extends DCLogic {
     if (!root) return;
     root.querySelectorAll('[data-count]').forEach((el) => {
       const to = Number(el.getAttribute('data-to')) || 0;
-      if (el.__to === to) return;
+      const currency = this.state.s?.branding?.currency || 'USD';
+      if (el.__to === to && el.__currency === currency) return;
+      el.__currency = currency;
       const from = el.__cur == null ? 0 : el.__cur;
       el.__to = to;
       const dur = Number(el.getAttribute('data-dur')) || 1200;
@@ -324,9 +333,9 @@ class Component extends DCLogic {
         const e = 1 - Math.pow(1 - k, 3);
         const v = from + (to - from) * e;
         el.__cur = v;
-        el.textContent = mode === 'int' ? Math.round(v).toLocaleString('en-US') : money(v);
+        el.textContent = mode === 'int' ? Math.round(v).toLocaleString('en-US') : money(v, currency);
         if (k < 1) el.__raf = requestAnimationFrame(step);
-        else { el.__cur = to; el.textContent = mode === 'int' ? Math.round(to).toLocaleString('en-US') : money(to); }
+        else { el.__cur = to; el.textContent = mode === 'int' ? Math.round(to).toLocaleString('en-US') : money(to, currency); }
       };
       el.__raf = requestAnimationFrame(step);
     });
@@ -334,6 +343,9 @@ class Component extends DCLogic {
 
   renderVals() {
     const s = Object.assign({}, DEFAULTS, this.state.s || {});
+    const brand = Brand.normalize(s.branding);
+    const anonymousName = Brand.anonymousName(s);
+    const formatMoney = n => money(n, brand.currency || 'USD');
     const live = (s.donations || []).filter((d) => !d.voided);
     this._wallCandidates = live.length; // how many rows the fit pass may probe
     const total = live.reduce((a, d) => a + (Number(d.amount) || 0), 0);
@@ -348,7 +360,7 @@ class Component extends DCLogic {
     const annD = curId ? (s.donations || []).find((d) => d.id === curId) : null;
     const announce = !!annD;
     const amt = annD ? Number(annD.amount) || 0 : 0;
-    const nm = annD ? (annD.anon ? 'A friend of Aspiring Futures' : (annD.name || 'A friend of Aspiring Futures')) : '';
+    const nm = annD ? (annD.anon ? anonymousName : (annD.name || anonymousName)) : '';
     const defs = (s.fields || []).filter((f) => f && f.onScreen);
     const shown = (d, max, dropStatus) => {
       if (!d) return [];
@@ -395,6 +407,11 @@ class Component extends DCLogic {
     if (chip && brokerOk && this.state.ctrlSeen) chipColor = 'var(--color-neutral-400)';
 
     return {
+      organization: brand.organization, logoSrc: brand.logo || 'assets/fundraising-mark.svg', logoVisible: !!brand.logo,
+      missionMessage: brand.message || 'Together, we make a difference', showImpact: brand.showImpact && !!ambCat,
+      showAnnImpact: brand.showImpact && !!annProg && Math.floor(amt / annAnnual) > 0,
+      donationUrl: brand.donationUrl || '', qrImage: brand.qrImage || '', hasQRImage: !!brand.qrImage,
+      noQRImage: !brand.qrImage && !(typeof window !== 'undefined' && window.FundraiserLAN),
       needsPairing: !this.props.embedded && !this.state.mode,
       codeDraft: this.state.codeDraft,
       onCodeDraft: (e) => this.setState({ codeDraft: window.GalaLink ? window.GalaLink.format(e.target.value) : e.target.value, pairError: '' }),
@@ -410,7 +427,7 @@ class Component extends DCLogic {
       showTotal: !!s.showTotal, hideTotal: !s.showTotal,
       total, giftCount: live.length,
       showGoal, hideGoal: !showGoal,
-      goalLabel: money(goal), goalTok: this.state.goalTok,
+      goalLabel: formatMoney(goal), goalTok: this.state.goalTok,
       goalHero: !!this.state.goalHero,
       goalHeroLabel: this.state.goalHero ? this.state.goalHero.label : '',
       goalHeroKey: this.state.goalHero ? this.state.goalHero.tok : 0,
@@ -435,12 +452,12 @@ class Component extends DCLogic {
       ambientKey: ambCat ? ambCat.id : 'none',
       costLine: ambCat ? ('Funded from ' + Math.round((Number(ambCat.pct) || 0) / sum * 100) + '% of tonight’s gifts.') : 'Funded across every program.',
       wall: live.slice().reverse().slice(0, this.props.wallLength != null ? Math.max(1, Number(this.props.wallLength)) : Math.max(1, this.state.wallFit || 8)).map((d) => ({
-        name: d.anon ? 'A friend of Aspiring Futures' : (d.name || 'A friend of Aspiring Futures'),
-        amountLabel: money(d.amount),
+        name: d.anon ? anonymousName : (d.name || anonymousName),
+        amountLabel: formatMoney(d.amount),
         meta: shown(d, 2).join(' · ')
       })),
       wallEmpty: live.length === 0,
-      showQr: this.props.showQr !== false,
+      showQr: this.props.showQr !== false && (!!brand.qrImage || (!(typeof window !== 'undefined' && window.FundraiserLAN) && !s.branding)),
       qrCaption: s.qrCaption,
       banner: this.state.banner,
       ambientOpacity: announce ? 0.82 : 1,
@@ -451,7 +468,7 @@ class Component extends DCLogic {
         : 'afCardIn .5s cubic-bezier(.2,.8,.2,1) both',
       annName: nm,
       annNameSize: (nm.length <= 14 ? 84 : nm.length <= 22 ? 66 : nm.length <= 32 ? 52 : 42) + 'px',
-      annAmount: money(amt),
+      annAmount: formatMoney(amt),
       annMeta: meta,
       annImpactCount: annCount,
       annImpactLine: annProg

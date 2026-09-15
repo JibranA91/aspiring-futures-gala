@@ -1,13 +1,41 @@
 {
   "name": "aspiring-futures-gala",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Live gala donation display. This manifest only holds the dev/test tooling (unit tests via node --test, end-to-end via Playwright); the app itself is a build-free static site with no runtime dependencies.",
+  "description": "Customizable offline fundraising controller and projector display.",
+  "main": "desktop/main.cjs",
   "scripts": {
     "test": "node --test",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "start": "electron .",
+    "test:desktop": "playwright test --config playwright.desktop.config.js",
+    "portable:win": "electron-builder --win portable --x64 --publish never",
+    "portable:mac": "electron-builder --mac zip --x64 --arm64 --publish never"
   },
   "devDependencies": {
-    "@playwright/test": "^1.63.0"
+    "@playwright/test": "^1.63.0",
+    "@fontsource/caprasimo": "5.2.5",
+    "@fontsource/figtree": "5.2.8",
+    "electron": "44.3.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "org.fundraising.display",
+    "productName": "Fundraising Display",
+    "copyright": "Fundraising Display contributors",
+    "directories": { "output": "dist" },
+    "icon": "gala/assets/app-icon.png",
+    "files": ["desktop/**", "gala/**", "!gala/README.md", "package.json"],
+    "artifactName": "Fundraising-Display-${version}-${os}-${arch}.${ext}",
+    "win": { "target": ["portable"], "signExecutable": false },
+    "portable": { "useZip": true },
+    "mac": {
+      "target": ["zip"],
+      "category": "public.app-category.productivity",
+      "identity": null,
+      "extendInfo": {
+        "NSLocalNetworkUsageDescription": "Connect your projector to this fundraising event on the same Wi-Fi network."
+      }
+    }
   }
 }

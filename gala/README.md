@@ -1,178 +1,163 @@
-# Aspiring Futures — Gala Fundraising Display
+# Fundraising Display — event guide
 
-A live donation display for a fundraising gala. An operator sits off to the side
-with the **Gala Control** console and types in each gift as it's announced; a
-second **Audience Screen** on the projector reacts in real time — animating each
-gift, a rising thermometer, category breakdowns, the running total, and the goal.
+The controller records gifts and runs the audience screen. New portable app
+users start with a neutral theme and a $10,000 goal. Existing events keep their
+saved goals, wording, fields, and program settings.
 
-This is a **standalone static web app** — plain HTML/CSS/JS, no build step and no
-framework CDN. Open it in a browser and it runs.
+## Launch and connect
 
----
+Open the Windows portable executable, or extract the Mac ZIP and open the app.
+One controller window opens; the local server runs in the background on port
+8080. No installation or internet is needed during the event.
 
-## Running it
+For **two laptops**, join the same trusted Wi-Fi or wired network. Open
+**Settings → Connection & recovery**, then open a listed projector address in the
+other laptop's browser. Enter the four-digit code under **The projector laptop**.
+Use browser fullscreen. The projector needs no app installation.
 
-**Easiest:** from the project root, double-click **`launch.bat`** (Windows) or
-run **`./launch.sh`** (macOS / Linux / Git Bash). It starts a local server on
-port **8080** and opens the control console in your browser. Keep that window
-open during the event; close it to stop.
+For **one laptop with an attached projector**, choose **Open audience window**,
+move the window onto the projector, and use fullscreen. Keep both windows open.
 
-**Manually:** from the project root, run the bundled no-cache server (don't open
-the files as `file://` — the live cross-window sync needs a real origin):
+The old Python launchers remain available for single-laptop browser use. They do
+not provide the portable app's local two-laptop relay, native backups, or server
+restart controls. Do not open HTML using `file://`.
 
-```bash
-python serve.py 8080
-```
+## Before the event
 
-Then open **http://localhost:8080/** for the control console.
+1. Rehearse with the actual laptops, projector, and venue network.
+2. Allow local network access if prompted. Guest Wi-Fi may isolate devices;
+   ask the venue for a network permitting laptop-to-laptop connections.
+3. Check that gifts save successfully in the backup folder.
+4. Confirm organization, logo, theme, currency, goal, programs, and donor fields.
+5. Enter rehearsal gifts, test celebrations, then start a new event.
+6. Export a backup to a separate location. Keep laptops awake and on power.
 
-> Fonts (Google Fonts) and the two-laptop relay (MQTT) need internet. Everything
-> else — entering gifts, the audience animations, single-laptop mode, local
-> backup, CSV — works fully offline.
+## Record and edit gifts
 
----
+- Enter a donor name and positive amount. **Anonymous** hides the name on the
+  projector but retains it in the operator's private log.
+- **Add & show on screen** records and announces a gift. **Add quietly** records
+  it without an announcement. **Ctrl/Command + Enter** adds and shows.
+- Announcements queue in order. Use **Hold gift on screen**, **Replay last gift**,
+  and **Clear screen** to control them.
+- The log's **Edit** dialog changes a gift and offers **Void / Restore**. Voided
+  gifts leave the totals and projector but remain in backups.
+- **Confetti**, **Balloons**, **Fireworks**, and **Big finish** play over the board.
+- Updating the goal reveals the target prominently before shrinking it to the
+  thermometer. Goal and running total can each be hidden.
 
-## Using it at an event
+## Branding and settings
 
-### One laptop (laptop + projector on the same machine)
+**Brand & appearance** includes organization name, logo, four theme presets,
+custom colors, font style, currency, impact visibility, and donation QR image.
+PNG, JPG, and WebP uploads are resized locally; SVG uploads are not accepted.
+Logos retain their aspect ratio. **Remove logo** hides the logo.
 
-1. Open **Gala Control** (`/` → `index.html`).
-2. Click **Settings → The projector laptop → This laptop**, then
-   **Open audience window**. Drag that window onto the projector and press
-   fullscreen (F11).
-3. Both windows stay in sync automatically. Start entering gifts.
+Appearance changes stay in preview until **Apply appearance**. **Discard changes**
+restores the saved appearance. **Restore theme defaults** resets only draft
+colors and font. A contrast warning helps identify hard-to-read projector colors.
 
-### Two laptops (one records, one projects over the internet)
+Currency changes labels only, not the values of gifts or program costs. Upload
+the QR image supplied by your donation platform; entering its URL does not
+generate a QR code. The display works offline, but online donation pages still
+require internet for donors.
 
-1. On the recording laptop, open **Gala Control**. In **Settings** keep
-   **Second laptop** selected — it shows a **4-digit pairing code** (e.g. `1234`).
-2. On the projector laptop, open **`audience.html`** and type that code (or use
-   **Copy audience link** on the console and open the link on the projector).
-3. They connect through a public MQTT relay. **Donor names and amounts are
-   end-to-end encrypted** with the pairing code before they leave the recording
-   laptop — the relay only ever carries ciphertext. Generating a **New code**
-   unpairs the projector.
+Other settings update immediately:
 
-### Entering a gift
+- **Screen & wording:** event title, tagline, QR caption, animation pace, and
+  anonymous donor wording. The default is **A friend of {organization name}**;
+  the placeholder follows the applied organization name. Customize it or choose
+  **Use default wording** to reset it. Blank wording also uses the default.
+  This changes gift announcements and the donor wall, not private log/CSV names.
+- **Where it goes:** program names, units (people, families, animals, etc.), share
+  percentages, and monthly cost per unit. **Normalize to 100** adjusts shares.
+- **Gift fields:** data to collect and which fields are public. Removed fields
+  with existing values remain in the saved log and CSV.
 
-- Type a **donor name** (or mark it **Anonymous**) and an **amount** (quick-amount
-  chips are there for speed), then **Add & show on screen** — this plays the gift
-  animation on the projector. **Add quietly** records it without the animation.
-- **⌘/Ctrl + Enter** adds-and-shows from anywhere.
-- The **Log** lets you **Show** any past gift again, or **Edit** it — the edit
-  dialog changes the donor, amount and fields, and **voids or restores** the gift
-  from the same place (voided gifts drop out of the totals and the audience screen
-  but stay in the CSV).
-- On the audience screen each shown gift appears as a compact card **over** the
-  live board (the totals, thermometer and donor wall stay visible), translated
-  into a sponsorship program as **people supported for a year** — e.g. "6 children
-  supported for a year of shelter home living". Gifts shown in quick succession
-  **queue** and play one after another rather than cutting each other off.
+The board cycles through annual program impact using each program's allocated
+share. A gift announcement illustrates what its full amount could support in one
+random program; this is not an earmark or a count to sum across programs. Gifts
+smaller than an annual unit do not claim a whole unit. Hide impact calculations
+if monthly sponsorship does not fit your organization.
 
-### Celebrations
+## Backups and moving laptops
 
-- The console's **Celebrate** panel fires a burst on the audience screen —
-  **Confetti**, **Balloons**, **Fireworks**, or a combined **Big finish** — for a
-  standout gift or the moment you hit the goal. Each plays *over* the live board
-  without taking it over.
+The portable app automatically saves:
 
-### Settings
+- `event.json`: gifts, settings, IDs, timestamps, voided state, and branding.
+- `event.previous.json`: the previous valid event snapshot.
+- `donations.csv`: the current ledger; no allocation or summary rows. It is a
+  companion export, not a full-fidelity event backup.
 
-- **Where it goes** — the sponsorship programs each gift is split across. Each
-  has a **share %** (how the money is allocated) and a **monthly cost** (what it
-  costs to sponsor one beneficiary). Both drive the audience impact figures;
-  "Normalize to 100" fixes the percentages. Defaults: Student living & education
-  30% / $65, Family financial assistance 25% / $120, Shelter home living 25% /
-  $60, Books, supplies & laptops 20% / $15.
-- **Gift fields** — add/rename the fields you collect per gift (text / number /
-  choice), and choose which appear on the audience screen vs. console-only.
-- **Screen & wording** — event name, tagline, QR caption, and animation pace.
-- **The goal** (the card on the console, not this dialog) — set a target and
-  toggle whether the goal and/or running total show on screen. Updating the
-  target plays a **big reveal**: the new goal appears large in the centre of the
-  audience screen, then shrinks up to its spot above the thermometer.
-- **Impact figures** — each shown gift is translated into a **randomly chosen
-  program** (from "Where it goes", gated by gift size) as the number of people
-  it supports for a year — e.g. "6 families supported for a year of family
-  financial assistance". The board's impact figure **cycles through the
-  programs**, each showing how many people its own share of the total supports
-  for a full year (e.g. "5 students · Student living & education · funded from
-  30% of tonight's gifts") — honest, never pooling the whole total into one line.
+**Settings → Backup → Open backup folder** shows the location. Data is in the
+operating system's app-data folder, not beside the portable executable.
+Replacing or moving the executable does not replace or move donations.
 
-### Backup — nothing is lost
+Use **Export event** for a complete backup and **Import event** on another laptop.
+Import confirms replacement and archives the existing event first. **Start a new
+event** also archives the desktop event before clearing gifts; it keeps branding,
+programs, and fields.
 
-- Every gift is saved to this browser's **local storage** the instant it lands —
-  silently, no prompts.
-- For an off-browser copy, click **Settings → Backup → Back up to a file…** and
-  pick one CSV file **once**. After that, every gift rewrites that single file in
-  the background — no download, no dialog. (This uses the File System Access API,
-  so it needs Chrome or Edge; elsewhere use **Export a CSV copy now** for a manual
-  snapshot.) After a reload, click **Reconnect** once to resume writing to it.
-- **Export a CSV copy now** downloads a dated snapshot on demand, and **Restore
-  from CSV** reads a previous export back in (handy if a laptop dies mid-event).
-- The CSV is a plain **ledger of the gift entries** — donor, amount, and the
-  gift fields you configured — one row per gift. No category-allocation columns
-  or summary row.
-- **Start a new event** (bottom of Backup) clears the board to a fresh state and
-  begins a new CSV file, after a confirmation — your categories, fields and
-  wording are kept.
+To migrate the older browser version, run its controller from this branch using
+the same browser and address as before (localhost and 127.0.0.1 have different
+storage). Choose **Settings → Backup → Export event**, then import that file in
+the portable app. Do not clear browser data until verified. CSV restore is for
+older CSV backups; it cannot preserve all metadata or branding.
 
----
+## Recovery
 
-## How it's built
+- **Server stopped:** keep the app open. Automatic recovery tries up to three
+  restarts. **Restart server** retries manually while preserving gifts and code.
+- **Port 8080 occupied:** close the old launcher or other app using it, then
+  restart the server. The app never kills unrelated programs.
+- **Projector disconnected:** keep its browser open. It retains the last board
+  and catches up on reconnect. Changing the code requires re-pairing.
+- **File save failed:** keep the app open. **Export event** to another location,
+  fix the storage problem, then **Retry saving**. Check the saved status. A newer
+  local recovery snapshot is used on reopening, but is not a substitute for
+  separate backups.
+- **App crashed:** reopen it and review restored gifts. A new app session has a
+  new pairing code; reconnect the projector if asked.
+- **Unreadable event:** the app tries the previous valid snapshot. If neither
+  file is readable, it stops instead of starting over them. Import a known-good
+  backup; original unreadable files are preserved when replacing them.
 
-The screens started as HTML/CSS/JS prototypes that ran on a heavyweight CDN
-runtime (React + Babel + a streaming template engine). This app **replaces that
-entire runtime** with a small dependency-free one, so it's a plain static site.
+**Save diagnostic report** includes app version, platform, connection status,
+save timing, and IPv4 adapter names and addresses, without donor names or
+donation data. Known virtual adapters (such as WSL/Hyper-V and VPN interfaces)
+are hidden from projector links and Copy audience link, but retained in this
+report. Filtering uses adapter names, not address ranges: a physical LAN using
+172.x addresses is still supported.
 
-```
-gala/
-  index.html        Gala Control console        (loads controller.js)
-  audience.html     Audience / projector screen (loads audience.js)
-  ds/styles.css     Organic design-system tokens        (reused as-is)
-  assets/           logo
-  js/
-    dcx.js          ~250-line vanilla runtime: {{ }} bindings, sc-for / sc-if,
-                    events, refs, and a keyed DOM reconciler. Replaces the
-                    prototype's React/Babel/streaming runtime.
-    gala-link.js    controller ⇄ audience transport: BroadcastChannel on one
-                    machine, encrypted MQTT-over-WebSocket between two   (reused)
-    image-slot.js   the "Give from your seat" QR drop slot (localStorage-backed)
-    celebrations.js confetti / fireworks / balloons overlay for the audience
-    controller.js   Gala Control console logic
-    audience.js     Audience Screen logic
-```
+## Privacy and limitations
 
-- **`dcx.js`** is the substantive new piece. It reproduces exactly the subset of
-  the design runtime the two templates use — value/handler bindings, list and
-  conditional rendering, `onChange`-fires-on-input semantics, `ref` callbacks,
-  controlled inputs, and keyed reconciliation so focused fields keep their caret
-  and CSS animations replay only when a key changes or a node mounts.
-- The **component logic** (`controller.js`, `audience.js`) and the **templates**
-  (inside each HTML file's `<template id="tpl">`) started from the design prototype
-  and have since grown with the features built here — celebrations, the big goal
-  reveal, editing logged gifts, and the auto-fitting donor wall. The console's live
-  preview pane embeds the real `audience.html` as an `<iframe>`. Each app file also
-  carries a small, browser-safe hook so its pure logic can be imported by the tests.
-- **`gala-link.js`** and **`ds/styles.css`** are reused unchanged from the
-  handoff bundle; they were already framework-independent.
+Connections stay on the local network, without a public relay. Local **HTTP is
+not encrypted**: use a trusted private network. The four-digit code is convenient
+pairing, not strong protection against a hostile network. Attempts are
+rate-limited; pairing yields a random, signed viewer token valid for up to
+24 hours. New codes revoke old tokens.
 
-State is shared through one `localStorage` key plus the link transport, so the
-console, the embedded preview, and the projector window all stay in sync.
+Only approved display fields reach projector browsers. Anonymous donors' real
+names, private fields, and voided gifts remain in the controller. Native file
+operations and restart controls are not exposed through the network server.
 
-Built from a design handoff — the `aspiring-futures-donation-display/` bundle
-(kept locally and git-ignored; not part of this repo).
+Initial portable builds are unsigned; Mac builds are not notarized. OS warnings
+or managed-device restrictions are possible. Rehearse with the downloaded build.
+No test suite guarantees recovery from every hardware, power, disk, or network failure.
 
----
+## Architecture and tests
 
-## Tests
+The interface is vanilla HTML/CSS/JavaScript. `dcx.js` renders templates;
+`branding.js` validates and applies colors; `controller-settings.js` provides
+branding and desktop controls. `lan-link.js` connects projector browsers to the
+local server; BroadcastChannel serves same-app windows. Fonts are bundled.
 
-The core logic — CSV export/restore, the saved-state upgrade path, totals and
-impact math, the pairing cipher, and the donor-wall fit — has a dependency-free
-unit suite that runs on Node's built-in runner. From the repo root:
+The desktop window, supervised server, read-only projector feed, and event files
+are in `desktop/`. The controller uses a stable internal origin independent of
+the HTTP server, keeping recovery controls available during server failures.
 
-```bash
-node --test
-```
-
-It also runs on every push and pull request via GitHub Actions.
+From the root: `npm test`, `npm run test:e2e`, and `npm run test:desktop`.
+Browser tests require `npx playwright install chromium`. Run the two browser-based
+suites separately because they share port 8080. Tests cover storage recovery,
+queues, editing/voiding, privacy, pairing, reconnection, branding, and previous
+loading/donor-wall regressions.

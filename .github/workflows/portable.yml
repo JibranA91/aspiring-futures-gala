@@ -1,0 +1,51 @@
+name: Build portable apps
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ['desktop/**', 'gala/**', 'scripts/**', 'test/**', 'package*.json', '.github/workflows/portable.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            command: npm run portable:win
+            artifact: windows-portable
+            files: dist/*.exe
+          - os: macos-latest
+            command: npm run portable:mac
+            artifact: mac-portable
+            files: dist/*.zip
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node --test
+      - run: ${{ matrix.command }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Smoke-test packaged Windows app
+        if: runner.os == 'Windows'
+        run: node scripts/smoke-packaged.cjs "dist/win-unpacked/Fundraising Display.exe"
+      - name: Smoke-test packaged Mac app
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          if [ "$(uname -m)" = "arm64" ]; then APP_DIR="mac-arm64"; else APP_DIR="mac"; fi
+          node scripts/smoke-packaged.cjs "dist/$APP_DIR/Fundraising Display.app/Contents/MacOS/Fundraising Display"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.files }}
+          if-no-files-found: error
+          retention-days: 14

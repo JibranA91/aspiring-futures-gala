@@ -4,9 +4,6 @@
 // donor-wall layout, and "does the console actually load without hanging").
 const { defineConfig } = require('@playwright/test');
 
-// serve.py needs `python` on Windows and `python3` on Linux/macOS (and CI).
-const PY = process.platform === 'win32' ? 'python' : 'python3';
-
 module.exports = defineConfig({
   testDir: './e2e',
   timeout: 30000,
@@ -16,16 +13,16 @@ module.exports = defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
-    baseURL: 'http://localhost:8080',
+    baseURL: 'http://127.0.0.1:8080',
     viewport: { width: 1280, height: 720 },
     trace: 'on-first-retry',
   },
   projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
-  // Serve gala/ with the project's own no-cache server for the duration of the run.
+  // A loopback-only static server keeps browser tests independent of Python.
   webServer: {
-    command: `${PY} serve.py 8080`,
-    url: 'http://localhost:8080/',
-    reuseExistingServer: !process.env.CI,
+    command: 'node scripts/serve-static.cjs',
+    url: 'http://127.0.0.1:8080/',
+    reuseExistingServer: false,
     timeout: 30000,
   },
 });

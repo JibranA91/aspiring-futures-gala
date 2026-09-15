@@ -348,6 +348,7 @@
     v.dom = el;
     updateProps(el, null, v.props);
     for (var i = 0; i < v.kids.length; i++) el.appendChild(createDom(v.kids[i]));
+    if (v.el === 'select' && v.props.value != null) setProp(el, 'value', v.props.value);
     if (v.props.__ref) callRef(v.props.__ref, el);
     return el;
   }
@@ -359,6 +360,7 @@
     // Leaf == fully-static children: built once at mount, never re-diffed. This
     // leaves imperatively-managed content (e.g. animated counters) untouched.
     if (!nw.leaf) patchChildren(old.dom, old.kids, nw.kids);
+    if (nw.el === 'select' && nw.props.value != null) setProp(old.dom, 'value', nw.props.value);
   }
 
   function unmountRefs(v) {

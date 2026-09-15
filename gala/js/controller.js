@@ -7,6 +7,7 @@
  * design file. The template lives in <template id="tpl"> in index.html.
  */
 const DCLogic = (typeof window !== 'undefined' && window.DCX) ? window.DCX.DCLogic : class {};
+const Brand = typeof window !== 'undefined' ? window.FundraiserBrand : require('./branding.js');
 
 const KEY = 'af-gala-state-v1';
 const CODE_KEY = 'af-gala-link-ctrl-v1';
@@ -14,6 +15,7 @@ const POD = ['var(--color-accent-500)', 'var(--color-accent-2-400)', 'var(--colo
 const DISPLAY_FILE = 'audience.html';
 
 const DEFAULTS = {
+  anonymousLabel: Brand.anonymousTemplate,
   eventName: 'An Evening for Aspiring Futures',
   tagline: 'The best way to predict the future is to shape it',
   goal: 10000, showGoal: false, showTotal: true,
@@ -73,7 +75,7 @@ function isPledged(d) {
   return Object.keys(f).some((k) => /^pledg/i.test(String(f[k] || '')));
 }
 
-function money(n) { return '$' + Math.round(Number(n) || 0).toLocaleString('en-US'); }
+function money(n, currency = 'USD') { return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(Math.round(Number(n) || 0)); }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 function csvCell(v) {
   const s = v == null ? '' : String(v);
@@ -195,7 +197,7 @@ class Component extends DCLogic {
     this.link.send('state', st);
   }
   commit(patch) {
-    const s = Object.assign({}, this.state.s || DEFAULTS, patch, { rev: Date.now() });
+    const s = Object.assign({}, this.state.s || DEFAULTS, patch, { rev: Math.max(Date.now(), (Number(this.state.s?.rev) || 0) + 1) });
     this.setState({ s });
     this.persist(s);
     this.broadcast(s);
@@ -211,7 +213,7 @@ class Component extends DCLogic {
   add(show) {
     const f = this.state.f;
     const amount = Number(f.amount);
-    if (!(amount > 0)) { this.setState({ err: 'Enter an amount greater than zero.' }); return; }
+    if (!(amount > 0) || !Number.isFinite(amount)) { this.setState({ err: 'Enter a valid amount greater than zero.' }); return; }
     if (!f.name.trim()) { this.setState({ err: 'Add a donor name.' }); return; }
     const defs = this.state.s.fields || [];
     const vals = {};
@@ -223,7 +225,7 @@ class Component extends DCLogic {
     const d = { id: uid(), ts: new Date().toISOString(), name: f.name.trim(), anon: !!f.anon, amount, fields: vals, voided: false };
     const s = this.commit({
       donations: (this.state.s.donations || []).concat([d]),
-      stage: show ? { token: Date.now(), id: d.id } : this.state.s.stage
+      stage: show ? { token: uid(), id: d.id } : this.state.s.stage
     });
     const keep = {};
     defs.forEach((fd) => {
@@ -233,7 +235,7 @@ class Component extends DCLogic {
     this.writeBackup();
   }
 
-  showOne(id) { this.commit({ stage: { token: Date.now(), id } }); }
+  showOne(id) { this.commit({ stage: { token: uid(), id } }); }
 
   // Fire a celebratory burst on the audience screen (and the live preview). It's
   // a transient cue, not board state, so it rides the link as its own message
@@ -265,7 +267,7 @@ class Component extends DCLogic {
     const ef = this.state.editForm;
     if (!ef) return;
     const amount = Number(ef.amount);
-    if (!(amount > 0)) { this.setState({ editErr: 'Enter an amount greater than zero.' }); return; }
+    if (!(amount > 0) || !Number.isFinite(amount)) { this.setState({ editErr: 'Enter a valid amount greater than zero.' }); return; }
     if (!ef.name.trim()) { this.setState({ editErr: 'Add a donor name.' }); return; }
     const defs = (this.state.s.fields) || [];
     const vals = Object.assign({}, ef.vals); // keeps values for any retired fields
@@ -289,7 +291,7 @@ class Component extends DCLogic {
   // columns and no TOTAL summary row.
   csvText(s) {
     const defs = allFieldDefs(s);
-    const head = ['Ref', 'Timestamp', 'Donor', 'Anonymous', 'Amount USD']
+    const head = ['Ref', 'Timestamp', 'Donor', 'Anonymous', 'Amount ' + (s.branding?.currency || 'USD')]
       .concat(defs.map((f) => f.label + (f.retired ? ' (removed)' : '')))
       .concat(['Voided']);
     const rows = (s.donations || []).map((d, i) => [
@@ -402,7 +404,11 @@ class Component extends DCLogic {
   // ── Reset to a fresh event ───────────────────────────────────────────────
   askReset = () => this.setState({ confirmReset: true });
   cancelReset = () => this.setState({ confirmReset: false });
-  doReset = () => {
+  doReset = async () => {
+    if (window.fundraiserDesktop) {
+      try { await window.fundraiserDesktop.archive(); }
+      catch (error) { this.setState({ restoreNote: 'Could not archive the current event: ' + error.message }); return; }
+    }
     this.setState({ confirmReset: false, f: { name: '', amount: '', anon: false, vals: { status: 'Paid' } }, err: '', exportedAt: null, restoreNote: 'New event started — the board is clear.' });
     this.commit({ donations: [], stage: null, retiredFields: [] });
     if (this.fileHandle) {
@@ -457,6 +463,8 @@ class Component extends DCLogic {
 
   renderVals() {
     const s = Object.assign({}, DEFAULTS, this.state.s || {});
+    const currency = s.branding?.currency || 'USD';
+    const formatMoney = n => money(n, currency);
     const f = this.state.f;
     const ef = this.state.editForm;
     const all = s.donations || [];
@@ -581,15 +589,16 @@ class Component extends DCLogic {
       screenNote: defs.filter((fd) => fd.onScreen).length > 3
         ? 'The audience screen shows the first three on-screen fields — the rest stay in the console and the CSV.'
         : 'Marked fields appear beside the donor name on the audience screen. Three is the comfortable maximum.',
+      currency,
       quick: [100, 250, 500, 1000, 2500, 5000, 10000, 25000].map((v) => ({
-        label: v >= 1000 ? '$' + (v / 1000) + 'k' : '$' + v,
+        label: formatMoney(v),
         set: () => this.setF('amount', String(v))
       })),
       formError: this.state.err,
       addAndShow: () => this.add(true),
       addQuiet: () => this.add(false),
 
-      stageLabel: staged ? (staged.anon ? 'A friend of Aspiring Futures' : staged.name) + ' · ' + money(staged.amount) : 'Ambient board — totals, categories and the rising bar.',
+      stageLabel: staged ? (staged.anon || !staged.name ? Brand.anonymousName(s) : staged.name) + ' · ' + formatMoney(staged.amount) : 'Ambient board — totals, categories and the rising bar.',
       fieldsSummary: defs.length ? defs.map((fd) => fd.label).join(' · ') : 'Name and amount only.',
       replay: () => { if (last) this.showOne(last.id); },
       noLast: !last,
@@ -597,14 +606,14 @@ class Component extends DCLogic {
       holdBg: s.hold ? on : off,
       holdLabel: s.hold ? 'Holding on screen — tap to release' : 'Hold gift on screen',
 
-      totalLabel: money(total), giftCount: live.length,
-      paidLabel: money(paid), pledgedLabel: money(total - paid),
+      totalLabel: formatMoney(total), giftCount: live.length,
+      paidLabel: formatMoney(paid), pledgedLabel: formatMoney(total - paid),
       goalPctLabel: Number(s.goal) > 0 ? Math.round(total / Number(s.goal) * 100) + '%' : '—',
 
       log: all.slice().reverse().map((d) => ({
         name: d.name || 'Anonymous',
         anon: !!d.anon,
-        amountLabel: money(d.amount),
+        amountLabel: formatMoney(d.amount),
         opacity: d.voided ? 0.4 : 1,
         meta: [new Date(d.ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })]
           .concat(allDefs.map((fd) => {
@@ -632,7 +641,7 @@ class Component extends DCLogic {
       editNamedBg: ef && ef.anon ? off : on,
       editAnonBg: ef && ef.anon ? on : off,
       editQuick: [100, 250, 500, 1000, 2500, 5000, 10000, 25000].map((v) => ({
-        label: v >= 1000 ? '$' + (v / 1000) + 'k' : '$' + v,
+        label: formatMoney(v),
         set: () => this.setEditF('amount', String(v))
       })),
       editFields: ef ? defs.map((fd) => ({
@@ -658,7 +667,7 @@ class Component extends DCLogic {
       onGoalDraft: (e) => this.setState({ goalDraft: e.target.value }),
       applyGoal: () => {
         const g = Number(this.state.goalDraft);
-        if (g > 0) this.commit({ goal: g, showGoal: true });
+        if (g > 0 && Number.isFinite(g)) this.commit({ goal: g, showGoal: true });
       },
       toggleGoal: () => this.commit({ showGoal: !s.showGoal }),
       goalOnBg: s.showGoal ? on : off,
@@ -668,7 +677,8 @@ class Component extends DCLogic {
       totalOnLabel: s.showTotal ? 'Running total is on screen' : 'Reveal the running total',
 
       catRows: cats.map((c, i) => ({
-        name: c.name, pct: c.pct, monthly: c.monthly, color: POD[i % POD.length],
+        name: c.name, pct: c.pct, monthly: c.monthly, unit: c.unit || 'people', color: POD[i % POD.length],
+        onUnit: (e) => this.commit({ categories: cats.map((x, j) => j === i ? Object.assign({}, x, { unit: e.target.value }) : x) }),
         onName: (e) => this.commit({ categories: cats.map((x, j) => j === i ? Object.assign({}, x, { name: e.target.value }) : x) }),
         onPct: (e) => this.commit({ categories: cats.map((x, j) => j === i ? Object.assign({}, x, { pct: Number(e.target.value) || 0 }) : x) }),
         onMonthly: (e) => this.commit({ categories: cats.map((x, j) => j === i ? Object.assign({}, x, { monthly: Number(e.target.value) || 0 }) : x) }),
@@ -683,6 +693,10 @@ class Component extends DCLogic {
       },
 
       eventName: s.eventName, tagline: s.tagline, qrCaption: s.qrCaption,
+      anonymousLabel: typeof s.anonymousLabel === 'string' ? s.anonymousLabel : Brand.anonymousTemplate,
+      anonymousPreview: Brand.anonymousName(s),
+      onAnonymousLabel: (e) => this.commit({ anonymousLabel: e.target.value.slice(0, 160) }),
+      resetAnonymousLabel: () => this.commit({ anonymousLabel: Brand.anonymousTemplate }),
       onEventName: (e) => this.commit({ eventName: e.target.value }),
       onTagline: (e) => this.commit({ tagline: e.target.value }),
       onQrCaption: (e) => this.commit({ qrCaption: e.target.value }),
@@ -722,11 +736,24 @@ class Component extends DCLogic {
 }
 
 if (typeof window !== 'undefined' && window.DCX) {
-  DCX.boot({
+  window.FundraiserSettings?.enhance(Component);
+  const startController = async () => {
+    await window.FundraiserSettings?.prepare(DEFAULTS);
+    DCX.boot({
     container: document.getElementById('dc-root'),
     template: document.getElementById('tpl').content,
     Logic: Component,
     props: { showPreview: true, logRows: 9 }
+    });
+  };
+  startController().catch(error => {
+    const root = document.getElementById('dc-root');
+    root.textContent = 'Unable to open the saved event: ' + error.message;
+    if (window.fundraiserDesktop) {
+      const button = document.createElement('button'); button.textContent = 'Import an event backup';
+      button.onclick = async () => { if (await window.fundraiserDesktop.importEvent()) location.reload(); };
+      root.appendChild(button);
+    }
   });
 }
 

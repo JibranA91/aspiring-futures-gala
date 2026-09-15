@@ -15,7 +15,14 @@
   const CONFETTI = ['#f2a93b', '#f5b856', '#f8ce84', '#9563dc', '#ae83e8', '#c9a9f1', '#ffffff', '#ff6b9d', '#4bd6c4', '#ffd34e', '#5ad1f0'];
   const FIRE = ['#ffd34e', '#ff8f3b', '#ff5d73', '#8f6bff', '#4bd6c4', '#ffffff', '#ffe08a'];
   const BALLOON = ['#f2a93b', '#9563dc', '#ff6b9d', '#4bd6c4', '#ffd34e', '#ae83e8', '#f76d6d'];
-  const pick = (a) => a[(Math.random() * a.length) | 0];
+  const pick = (a) => {
+    if (window.FundraiserBrand) {
+      const style = getComputedStyle(document.documentElement);
+      const colors = ['--color-accent-500', '--color-accent-300', '--color-accent-2-500', '--color-accent-2-300', '--color-text'].map(key => style.getPropertyValue(key).trim());
+      return colors[(Math.random() * colors.length) | 0];
+    }
+    return a[(Math.random() * a.length) | 0];
+  };
 
   let canvas = null, ctx = null, W = 0, H = 0, DPR = 1;
   let particles = [];
