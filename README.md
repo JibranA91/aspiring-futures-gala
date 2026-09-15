@@ -1,4 +1,4 @@
-# Fundraising Display
+# GiveStage
 
 A customizable fundraising controller and live projector display. Record gifts,
 edit or void entries, celebrate milestones, and show your organization's colors,
@@ -6,7 +6,7 @@ logo, programs, and fundraising goal.
 
 ## Portable app — no installation
 
-Get the ready-to-run app from [Releases](https://github.com/JibranA91/aspiring-futures-gala/releases).
+Get the ready-to-run app from [Releases](https://github.com/JibranA91/GiveStage/releases).
 Download an app listed under **Assets**, not the source-code archives.
 
 - **Windows:** download the Windows portable `.exe` and double-click it.
@@ -93,6 +93,35 @@ Build Windows on Windows and Mac on macOS. Output is in the ignored `dist/`
 folder. **Build portable apps** in GitHub Actions produces downloadable artifacts
 on relevant pull requests or manual runs; it does not publish a release.
 Test the actual downloaded build on its target OS before a live event.
+
+### Publish a release
+
+The build workflow creates downloads; it does **not** publish a release automatically.
+
+1. Update the version in `package.json` and `package-lock.json` together, for
+   example to `2.0.1`. Merge the changes into `main` and wait for all tests to pass.
+2. Open [Actions → Build portable apps](https://github.com/JibranA91/GiveStage/actions/workflows/portable.yml),
+   choose **Run workflow**, select **main**, and run it. Wait for both platform
+   builds and packaged-app checks to pass.
+3. Open the completed run and download its **windows-portable** and
+   **mac-portable** artifacts. Extract the outer artifact ZIPs: they contain the
+   Windows `.exe` and two Mac `.zip` files. Keep the Mac app ZIPs intact for upload.
+   These temporary workflow artifacts are retained for 14 days.
+4. Test the downloaded apps on their target operating systems before publishing.
+5. Open [Releases](https://github.com/JibranA91/GiveStage/releases) and choose
+   **Draft a new release**. Create a matching tag, such as **v2.0.1**, targeting
+   **main**. The release tag must identify the same commit that produced the
+   downloads: if `main` has changed since the build, rebuild and recheck first.
+6. Add release notes and attach the Windows `.exe` and both Mac `.zip` files.
+   Include the unsigned/not-notarized warning and any known limitations. Check
+   all three uploads are complete, then choose **Publish release**.
+
+App downloads are release attachments, never Git commits; `dist/` stays ignored.
+The repository is named GiveStage; the current app and download filenames still
+use **Fundraising Display**.
+
+See GitHub's guides for [running a workflow](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow)
+and [publishing a release](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository).
 
 ## Layout
 
