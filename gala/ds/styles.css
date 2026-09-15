@@ -1,5 +1,4 @@
 /* Organic — design-system tokens and component classes. This file is the source of truth for the system's look; retune it here and see readme.md. */
-@import url('https://fonts.googleapis.com/css2?family=Caprasimo:wght@400&family=Figtree:wght@400;600;700&display=swap');
 
 :root {
   --color-bg: #f5ead8;
@@ -253,4 +252,3 @@ textarea.input { min-height: 90px; resize: vertical; }
 .card, .dialog { border-radius: calc(var(--radius-lg) * 1.15); }
 .btn, .tag, .seg, .input { border-radius: 999px; }
 .input { padding-inline: 14px; }
-

@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+/dist/
+/desktop-test-results/
 
 # Playwright e2e artifacts
 /test-results/
@@ -14,9 +16,16 @@ desktop.ini
 *~
 *.swp
 
-# Local editor / assistant files (kept out of the repo)
-.claude/
-CLAUDE.md
+# Local configuration
+.[Cc][Ll][Aa][Uu][Dd][Ee]/
+[Cc][Ll][Aa][Uu][Dd][Ee].[Mm][Dd]
+[Aa][Gg][Ee][Nn][Tt][Ss].[Mm][Dd]
+[Aa][Gg][Ee][Nn][Tt].[Mm][Dd]
+.[Cc][Oo][Dd][Ee][Xx]/
+.[Aa][Gg][Ee][Nn][Tt][Ss]/
+.env
+.env.*
+!.env.example
 
 # Logs
 *.log
